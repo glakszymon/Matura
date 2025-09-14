@@ -1,0 +1,331 @@
+/**
+ * Performance Table Styles
+ * Modern, responsive styling for performance metrics table
+ */
+
+/* Performance Table Wrapper */
+.performance-table-wrapper {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: rgba(80, 112, 255, 0.1) 0px 4px 24px;
+}
+
+/* Performance Table */
+.performance-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: rgba(80, 112, 255, 0.1) 0px 4px 24px;
+  background: white;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* Table Header */
+.performance-table thead th {
+  text-align: left;
+  padding: 16px;
+  background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(118, 75, 162) 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.performance-table th:first-child {
+  text-align: left;
+}
+
+.performance-table th:not(:first-child) {
+  text-align: center;
+}
+
+/* Table Body */
+.performance-table tbody tr {
+  transition: background-color 0.2s;
+  background: white;
+}
+
+.performance-table tbody tr:hover {
+  background-color: rgba(246, 247, 251, 0.7);
+}
+
+.performance-table td {
+  padding: 16px;
+  border-bottom: 1px solid rgb(238, 238, 238);
+  font-weight: 600;
+  color: rgb(34, 34, 59);
+}
+
+.performance-table td:first-child {
+  text-align: left;
+}
+
+.performance-table td:not(:first-child) {
+  text-align: center;
+}
+
+/* Category Name Column */
+.category-name {
+  font-weight: 600;
+  color: rgb(34, 34, 59);
+}
+
+/* Task Count Column */
+.task-count {
+  font-weight: 600;
+}
+
+/* Performance Percentage Column */
+.percentage-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.percentage-text {
+  font-weight: 700;
+}
+
+.percentage-text.excellent {
+  color: rgb(46, 204, 113);
+}
+
+.percentage-text.good {
+  color: rgb(46, 204, 113);
+}
+
+.percentage-text.average {
+  color: rgb(52, 152, 219);
+}
+
+.percentage-text.poor {
+  color: rgb(243, 156, 18);
+}
+
+.percentage-text.critical {
+  color: rgb(231, 76, 60);
+}
+
+.percentage-bar {
+  width: 100%;
+  background: rgb(241, 243, 244);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.percentage-fill {
+  height: 12px;
+  background: linear-gradient(90deg, rgb(46, 204, 113) 0%, rgba(46, 204, 113, 0.8) 100%);
+  border-radius: 6px;
+  transition: width 0.5s;
+}
+
+.percentage-fill.excellent {
+  background: linear-gradient(90deg, rgb(46, 204, 113) 0%, rgba(46, 204, 113, 0.8) 100%);
+}
+
+.percentage-fill.good {
+  background: linear-gradient(90deg, rgb(46, 204, 113) 0%, rgba(46, 204, 113, 0.8) 100%);
+}
+
+.percentage-fill.average {
+  background: linear-gradient(90deg, rgb(52, 152, 219) 0%, rgba(52, 152, 219, 0.8) 100%);
+}
+
+.percentage-fill.poor {
+  background: linear-gradient(90deg, rgb(243, 156, 18) 0%, rgba(243, 156, 18, 0.8) 100%);
+}
+
+.percentage-fill.critical {
+  background: linear-gradient(90deg, rgb(231, 76, 60) 0%, rgba(231, 76, 60, 0.8) 100%);
+}
+
+/* Status Column */
+.status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status-badge.good {
+  background-color: rgba(46, 204, 113, 0.1);
+  color: rgb(46, 204, 113);
+}
+
+.status-badge.weak {
+  background-color: rgba(243, 156, 18, 0.1);
+  color: rgb(243, 156, 18);
+}
+
+.status-badge.critical {
+  background-color: rgba(231, 76, 60, 0.1);
+  color: rgb(231, 76, 60);
+}
+
+.status-badge.excellent {
+  background-color: rgba(46, 204, 113, 0.15);
+  color: rgb(39, 174, 96);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.status-badge.average {
+  background-color: rgba(52, 152, 219, 0.1);
+  color: rgb(41, 128, 185);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+/* Weak Category Row */
+tr.weak-category {
+  background-color: rgba(243, 156, 18, 0.05);
+}
+
+tr.weak-category:hover {
+  background-color: rgba(243, 156, 18, 0.1);
+}
+
+/* Sorting Enhancements */
+.sort-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 2px solid var(--gray-300, #e0e0e0);
+  background: var(--white, white);
+  color: var(--text-primary, #22223b);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sort-btn:hover {
+  border-color: var(--primary-blue, #5070ff);
+  color: var(--primary-blue, #5070ff);
+  background: rgba(80, 112, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+.sort-btn.active {
+  background: linear-gradient(135deg, rgb(102, 126, 234) 0%, rgb(118, 75, 162) 100%);
+  color: white;
+  border-color: rgb(102, 126, 234);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.sort-btn.active:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* Performance Row Animations */
+.performance-table tbody tr {
+  transition: all 0.3s ease;
+}
+
+.performance-table tbody tr.sorting {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+/* Highlight rows by performance level */
+.performance-row.excellent {
+  background: rgba(46, 204, 113, 0.05);
+  border-left: 3px solid rgb(46, 204, 113);
+}
+
+.performance-row.good {
+  background: rgba(46, 204, 113, 0.03);
+  border-left: 3px solid rgba(46, 204, 113, 0.6);
+}
+
+.performance-row.average {
+  background: rgba(52, 152, 219, 0.03);
+  border-left: 3px solid rgba(52, 152, 219, 0.6);
+}
+
+.performance-row.poor {
+  background: rgba(243, 156, 18, 0.03);
+  border-left: 3px solid rgba(243, 156, 18, 0.6);
+}
+
+.performance-row.critical {
+  background: rgba(231, 76, 60, 0.05);
+  border-left: 3px solid rgb(231, 76, 60);
+}
+
+/* Sort indicator animations */
+@keyframes sortHighlight {
+  0% { background: rgba(102, 126, 234, 0.1); }
+  50% { background: rgba(102, 126, 234, 0.2); }
+  100% { background: rgba(102, 126, 234, 0.1); }
+}
+
+.performance-table tbody tr.just-sorted {
+  animation: sortHighlight 1s ease-in-out;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .performance-table {
+    border-radius: 8px;
+  }
+  
+  .performance-table thead th {
+    padding: 12px;
+    font-size: 14px;
+  }
+  
+  .performance-table td {
+    padding: 12px;
+  }
+  
+  .percentage-bar {
+    max-width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .performance-table thead th {
+    padding: 10px;
+    font-size: 12px;
+  }
+  
+  .performance-table td {
+    padding: 10px;
+    font-size: 12px;
+  }
+  
+  .status-badge {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+  
+  .sort-options {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .sort-btn {
+    width: 100%;
+    justify-content: center;
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+  
+  .category-rank {
+    display: none;
+  }
+}

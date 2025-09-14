@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Analytics Data from Google Sheets - Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+            color: #1f2937;
+        }
+        .test-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .analytics-container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-left: 4px solid #3b82f6;
+        }
+        .subject-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .subject-button {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+        .subject-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3);
+        }
+        .subject-button.selected {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .subject-button-info {
+            margin-top: 8px;
+        }
+        .subject-button-name {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .subject-button-stats {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .analytics-content {
+            min-height: 200px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 2px dashed #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+        }
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3b82f6;
+        }
+        .stat-label {
+            color: #6b7280;
+            margin-top: 5px;
+        }
+        .category-list {
+            margin-top: 20px;
+        }
+        .category-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .category-weak {
+            border-left: 4px solid #ef4444;
+        }
+        .category-strong {
+            border-left: 4px solid #10b981;
+        }
+        .category-name {
+            font-weight: 600;
+        }
+        .category-stats {
+            color: #6b7280;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        .console-note {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>📊 Analytics Data from Google Sheets</h1>
+        <p>Testing real-time data display from your Google Sheets backend</p>
+        <div id="connection-status" style="margin-top: 15px;">
+            <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px;">
+                🔄 Connecting to Google Sheets...
+            </span>
+        </div>
+    </div>
+
+    <div class="analytics-container">
+        <h2>🎮 Data Loading Controls</h2>
+        <p>Use these controls to load and display data from your Google Sheets:</p>
+        
+        <button class="test-button" onclick="loadAnalyticsData()">
+            📊 Load Analytics Data from Google Sheets
+        </button>
+        <button class="test-button" onclick="refreshData()">
+            🔄 Refresh Data
+        </button>
+        <button class="test-button" onclick="clearDisplay()">
+            🧹 Clear Display
+        </button>
+    </div>
+
+    <div class="analytics-container" id="subject-selection-section">
+        <h2>📚 Subject Selection</h2>
+        <p>Choose a subject to view detailed analytics (populated from Google Sheets data):</p>
+        
+        <div id="subject-buttons" class="subject-buttons">
+            <div style="text-align: center; color: #6b7280; padding: 40px;">
+                Click "Load Analytics Data" to populate subjects from Google Sheets
+            </div>
+        </div>
+    </div>
+
+    <div class="analytics-container">
+        <h2>📈 Analytics Display</h2>
+        <div id="analytics-content" class="analytics-content">
+            <h3 style="color: #6b7280;">📊 Analytics Data</h3>
+            <p>Select a subject above to view detailed performance analytics</p>
+        </div>
+    </div>
+
+    <div class="console-note">
+        <strong>🔍 How to Use:</strong><br>
+        1. Open Developer Console (F12) to see detailed logging<br>
+        2. Click "Load Analytics Data" to fetch data from Google Sheets<br>
+        3. Select a subject button to view detailed analytics<br>
+        4. Watch the console for data loading progress and API responses<br>
+        5. The data shown will be from your actual Google Sheets or demo data if in demo mode
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="js/config.js"></script>
+    <script src="js/loadingManager.js"></script>
+    <script src="js/googleSheetsAPI-v2.js"></script>
+    <script src="js/analyticsManager.js"></script>
+
+    <script>
+        let googleSheetsAPI;
+        let analyticsManager;
+        let currentAnalyticsData = null;
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            initializeSystem();
+        });
+
+        function initializeSystem() {
+            console.log('%c🧪 ANALYTICS DATA TEST INITIALIZING', 'color: #ffffff; font-weight: bold; font-size: 16px; background: #3b82f6; padding: 12px; border-radius: 8px;');
+            
+            // Initialize Google Sheets API
+            googleSheetsAPI = new GoogleSheetsAPIv2(CONFIG);
+            
+            // Initialize Analytics Manager
+            analyticsManager = new AnalyticsManager(CONFIG, googleSheetsAPI);
+            
+            // Set global reference for toggle functions
+            window.analyticsManager = analyticsManager;
+            
+            // Update connection status
+            const statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                const mode = CONFIG.DEMO_MODE ? 'DEMO MODE' : 'PRODUCTION';
+                const color = CONFIG.DEMO_MODE ? '#f59e0b' : '#ef4444';
+                statusEl.innerHTML = `
+                    <span style="background: rgba(16, 185, 129, 0.2); color: #065f46; padding: 8px 16px; border-radius: 20px;">
+                        ✅ Connected • ${mode}
+                    </span>
+                `;
+            }
+            
+            console.log('%c✅ System initialized successfully', 'color: #10b981; font-weight: bold;');
+        }
+
+        async function loadAnalyticsData() {
+            console.log('%c📊 LOADING ANALYTICS DATA TEST', 'color: #3b82f6; font-weight: bold; font-size: 14px;');
+            
+            try {
+                // Show loading
+                showLoading();
+                
+                // Load analytics data
+                await analyticsManager.loadAnalyticsData();
+                
+                // Display the loaded data
+                displayAnalyticsData();
+                
+                console.log('%c✅ Analytics data loaded successfully', 'color: #10b981; font-weight: bold;');
+            } catch (error) {
+                console.error('Error loading analytics data:', error);
+                showError('Failed to load analytics data: ' + error.message);
+            }
+        }
+
+        function showLoading() {
+            const subjectButtons = document.getElementById('subject-buttons');
+            const analyticsContent = document.getElementById('analytics-content');
+            
+            if (subjectButtons) {
+                subjectButtons.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                        <div class="loading-spinner"></div>
+                        <p>Loading subjects from Google Sheets...</p>
+                    </div>
+                `;
+            }
+            
+            if (analyticsContent) {
+                analyticsContent.innerHTML = `
+                    <div class="loading-spinner"></div>
+                    <p>Processing analytics data...</p>
+                `;
+            }
+        }
+
+        function displayAnalyticsData() {
+            console.log('%c📈 DISPLAYING ANALYTICS DATA', 'color: #7c3aed; font-weight: bold;');
+            
+            if (!analyticsManager.subjectAnalytics) {
+                console.warn('No analytics data available');
+                showError('No analytics data available');
+                return;
+            }
+            
+            // Display subject buttons
+            displaySubjectButtons();
+            
+            // Update analytics content to show subject selection message
+            if (analyticsManager && analyticsManager.renderSelectSubjectMessage) {
+                analyticsManager.renderSelectSubjectMessage();
+            }
+            
+            console.log(`%c✅ Displayed ${Object.keys(analyticsManager.subjectAnalytics).length} subjects`, 'color: #10b981; font-weight: 600;');
+        }
+
+        function displaySubjectButtons() {
+            // Use the analyticsManager's built-in renderSubjectButtons method
+            if (analyticsManager && analyticsManager.renderSubjectButtons) {
+                analyticsManager.renderSubjectButtons();
+            } else {
+                console.error('Analytics manager not properly initialized for subject buttons');
+            }
+        }
+
+        function showSubjectDetails(subjectName) {
+            console.log(`%c📊 Showing details for subject: ${subjectName}`, 'color: #7c3aed; font-weight: bold;');
+            
+            // Use the analyticsManager's built-in showSubjectAnalytics method
+            // This will display the full expandable task list with individual tasks
+            if (analyticsManager && analyticsManager.showSubjectAnalytics) {
+                analyticsManager.showSubjectAnalytics(subjectName);
+            } else {
+                console.error('Analytics manager not properly initialized');
+                showError('Analytics system not available');
+            }
+        }
+
+        function refreshData() {
+            console.log('%c🔄 REFRESHING ANALYTICS DATA', 'color: #f59e0b; font-weight: bold;');
+            loadAnalyticsData();
+        }
+
+        function clearDisplay() {
+            console.log('%c🧹 CLEARING DISPLAY', 'color: #6b7280; font-weight: bold;');
+            
+            const subjectButtons = document.getElementById('subject-buttons');
+            const analyticsContent = document.getElementById('analytics-content');
+            
+            if (subjectButtons) {
+                subjectButtons.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; color: #6b7280; padding: 40px;">
+                        Click "Load Analytics Data" to populate subjects from Google Sheets
+                    </div>
+                `;
+            }
+            
+            if (analyticsContent) {
+                analyticsContent.innerHTML = `
+                    <h3 style="color: #6b7280;">📊 Analytics Data</h3>
+                    <p>Select a subject above to view detailed performance analytics</p>
+                `;
+            }
+        }
+
+        function showError(message) {
+            const subjectButtons = document.getElementById('subject-buttons');
+            const analyticsContent = document.getElementById('analytics-content');
+            
+            if (subjectButtons) {
+                subjectButtons.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; color: #ef4444; padding: 40px;">
+                        ❌ ${message}
+                    </div>
+                `;
+            }
+            
+            if (analyticsContent) {
+                analyticsContent.innerHTML = `
+                    <div style="color: #ef4444; text-align: center; padding: 40px;">
+                        <h3>❌ Error</h3>
+                        <p>${message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function getSubjectIcon(subjectName) {
+            const icons = {
+                'Matematyka': '📐',
+                'Polski': '📖',
+                'Angielski': '🇬🇧',
+                'Historia': '📜',
+                'Fizyka': '⚗️',
+                'Chemia': '🧪',
+                'Biologia': '🌱'
+            };
+            return icons[subjectName] || '📚';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

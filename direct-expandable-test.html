@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Direct Expandable Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .status.info { background: #e0f2fe; color: #0277bd; }
+        .status.success { background: #e8f5e8; color: #2e7d32; }
+        .status.error { background: #ffebee; color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Direct Expandable Test</h1>
+        <p>Using the real analytics manager with demo data</p>
+        
+        <div>
+            <button class="btn" onclick="initializeAndShow()">🚀 Load & Show Expandable Tasks</button>
+            <button class="btn" onclick="clearResults()">🧹 Clear</button>
+        </div>
+
+        <div id="status"></div>
+        
+        <!-- Subject selection area -->
+        <div id="subject-selection-section" style="display: none;">
+            <h2>📚 Select Subject</h2>
+            <div id="subject-buttons" class="subject-buttons"></div>
+        </div>
+        
+        <!-- Analytics content area -->
+        <div id="analytics-content"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/loadingManager.js"></script>
+    <script src="js/googleSheetsAPI-v2.js"></script>
+    <script src="js/analyticsManager.js"></script>
+
+    <script>
+        let googleSheetsAPI;
+        let analyticsManager;
+        
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        async function initializeAndShow() {
+            showStatus('🔄 Initializing analytics system...', 'info');
+            
+            try {
+                // Initialize systems
+                googleSheetsAPI = new GoogleSheetsAPIv2(CONFIG);
+                analyticsManager = new AnalyticsManager(CONFIG, googleSheetsAPI);
+                window.analyticsManager = analyticsManager;
+                
+                showStatus('📊 Loading analytics data...', 'info');
+                
+                // Load data
+                await analyticsManager.loadAnalyticsData();
+                
+                // Wait a moment for any UI updates to complete
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Check if data loaded properly
+                if (analyticsManager.subjectAnalytics && Object.keys(analyticsManager.subjectAnalytics).length > 0) {
+                    showStatus(`✅ Success! ${Object.keys(analyticsManager.subjectAnalytics).length} subjects loaded with expandable tasks`, 'success');
+                    
+                    // Log debug info
+                    console.log('📊 Analytics data loaded:', analyticsManager.subjectAnalytics);
+                    console.log('🎯 Available subjects:', Object.keys(analyticsManager.subjectAnalytics));
+                    
+                    // Show instructions
+                    const statusEl = document.getElementById('status');
+                    statusEl.innerHTML += `
+                        <div class="status info">
+                            <strong>🎯 Now try:</strong><br>
+                            1. Select a subject below<br>
+                            2. Click the ▶️ arrow or "Pokaż zadania" button next to any category<br>
+                            3. See individual tasks expand with full details!
+                        </div>
+                    `;
+                    
+                } else {
+                    showStatus('❌ No analytics data found', 'error');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                showStatus('❌ Error: ' + error.message, 'error');
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('status').innerHTML = '';
+            document.getElementById('subject-selection-section').style.display = 'none';
+            document.getElementById('analytics-content').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Table Demo</title>
+    <link rel="stylesheet" href="css/performance-table.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            margin: 40px;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #22223b;
+            margin-bottom: 40px;
+            font-weight: 700;
+        }
+        
+        .table-wrapper {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: rgba(80, 112, 255, 0.1) 0px 4px 24px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏷️ Tablica Wydajności - Nowy Styl</h1>
+        
+        <div class="table-wrapper">
+            <table class="performance-table">
+                <thead>
+                    <tr>
+                        <th>🏷️ Kategoria</th>
+                        <th>📚 Przedmiot</th>
+                        <th>📊 Zadania</th>
+                        <th>🎯 Skuteczność</th>
+                        <th>📈 Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="performance-row">
+                        <td class="category-name">Składnia</td>
+                        <td>Polski</td>
+                        <td class="task-count">0/2</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text poor">0%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill poor" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row weak-category">
+                        <td class="category-name">Funkcje</td>
+                        <td>Matematyka</td>
+                        <td class="task-count">1/3</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text poor">33%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill poor" style="width: 33%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge weak">⚠️ Słaby punkt</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Średniowiecze</td>
+                        <td>Historia</td>
+                        <td class="task-count">1/2</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text average">50%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill average" style="width: 50%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Algebra</td>
+                        <td>Matematyka</td>
+                        <td class="task-count">2/3</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text good">67%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill good" style="width: 67%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Geometria</td>
+                        <td>Matematyka</td>
+                        <td class="task-count">2/3</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text good">67%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill good" style="width: 67%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Grammar</td>
+                        <td>Angielski</td>
+                        <td class="task-count">2/3</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text good">67%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill good" style="width: 67%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Reading</td>
+                        <td>Angielski</td>
+                        <td class="task-count">2/3</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text good">67%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill good" style="width: 67%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Literatura</td>
+                        <td>Polski</td>
+                        <td class="task-count">3/4</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text good">75%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill good" style="width: 75%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Części mowy</td>
+                        <td>Polski</td>
+                        <td class="task-count">1/1</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text excellent">100%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill excellent" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Vocabulary</td>
+                        <td>Angielski</td>
+                        <td class="task-count">2/2</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text excellent">100%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill excellent" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Renesans</td>
+                        <td>Historia</td>
+                        <td class="task-count">1/1</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text excellent">100%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill excellent" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                    
+                    <tr class="performance-row">
+                        <td class="category-name">Oświecenie</td>
+                        <td>Historia</td>
+                        <td class="task-count">1/1</td>
+                        <td class="performance-percentage">
+                            <div class="percentage-container">
+                                <span class="percentage-text excellent">100%</span>
+                                <div class="percentage-bar">
+                                    <div class="percentage-fill excellent" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="performance-status">
+                            <span class="status-badge good">✅ Dobry</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background: white; border-radius: 12px; box-shadow: rgba(80, 112, 255, 0.1) 0px 4px 24px;">
+            <h2>🎨 Zmiany w Stylu</h2>
+            <ul style="line-height: 1.6; color: #22223b;">
+                <li><strong>Nowoczesny header:</strong> Gradient background z emojis w nagłówkach</li>
+                <li><strong>Lepsze wyrównanie:</strong> Centralne wyrównanie dla danych liczbowych</li>
+                <li><strong>Smooth animacje:</strong> Animowane paski postępu</li>
+                <li><strong>Hover efekty:</strong> Subtelne podświetlenie wierszy</li>
+                <li><strong>Responsywność:</strong> Dostosowanie do różnych rozmiarów ekranu</li>
+                <li><strong>Czytelność:</strong> Lepsze kontraste i spacing</li>
+                <li><strong>Visual feedback:</strong> Kolory wskazujące wydajność</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Subject Buttons Demo</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            padding: 20px;
+            background: #f8fafc;
+            font-family: Inter, sans-serif;
+        }
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .subject-buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>📊 Enhanced Subject Buttons</h1>
+            <p>Rich information at first sight with visual progress charts and detailed analytics</p>
+        </div>
+        
+        <div class="subject-buttons-grid" id="subject-buttons">
+            <!-- Excellent Performance Example -->
+            <button class="subject-button enhanced">
+                <div class="subject-button-header">
+                    <span class="subject-button-icon">🔢</span>
+                    <div class="subject-button-title">
+                        <div class="subject-button-name">Matematyka</div>
+                        <div class="subject-button-subtitle">23 zadań • Dzisiaj</div>
+                    </div>
+                    <div class="subject-performance-badge excellent">
+                        <span class="performance-emoji">🏆</span>
+                        <span class="performance-percentage">92%</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill excellent" style="width: 92%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="stat-correct">✅ 21</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-incorrect">❌ 2</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-total">23 razem</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="subject-button-details">
+                    <div class="subject-categories-info">
+                        <span class="categories-count">📊 8 kategorii</span>
+                        <span class="strong-categories">💪 6 mocnych</span>
+                        <span class="weak-categories">⚠️ 1 do poprawy</span>
+                    </div>
+                    
+                    <div class="subject-button-trend">
+                        <span class="trend improving">📈 Poprawa</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-chart">
+                    <div class="mini-chart">
+                        <div class="mini-chart-bars">
+                            <div class="mini-bar correct" title="Równania: Poprawne"></div>
+                            <div class="mini-bar correct" title="Funkcje: Poprawne"></div>
+                            <div class="mini-bar incorrect" title="Logarytmy: Błędne"></div>
+                            <div class="mini-bar correct" title="Geometria: Poprawne"></div>
+                            <div class="mini-bar correct" title="Algebra: Poprawne"></div>
+                            <div class="mini-bar correct" title="Trygonometria: Poprawne"></div>
+                            <div class="mini-bar correct" title="Pochodne: Poprawne"></div>
+                            <div class="mini-bar correct" title="Całki: Poprawne"></div>
+                        </div>
+                        <div class="mini-chart-label">Ostatnie 8 zadań</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Good Performance Example -->
+            <button class="subject-button enhanced">
+                <div class="subject-button-header">
+                    <span class="subject-button-icon">📝</span>
+                    <div class="subject-button-title">
+                        <div class="subject-button-name">Polski</div>
+                        <div class="subject-button-subtitle">18 zadań • Wczoraj</div>
+                    </div>
+                    <div class="subject-performance-badge good">
+                        <span class="performance-emoji">✅</span>
+                        <span class="performance-percentage">78%</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill good" style="width: 78%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="stat-correct">✅ 14</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-incorrect">❌ 4</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-total">18 razem</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="subject-button-details">
+                    <div class="subject-categories-info">
+                        <span class="categories-count">📊 6 kategorii</span>
+                        <span class="strong-categories">💪 4 mocnych</span>
+                        <span class="weak-categories">⚠️ 1 do poprawy</span>
+                    </div>
+                    
+                    <div class="subject-button-trend">
+                        <span class="trend stable">➡️ Stabilnie</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-chart">
+                    <div class="mini-chart">
+                        <div class="mini-chart-bars">
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                        </div>
+                        <div class="mini-chart-label">Ostatnie 8 zadań</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Average Performance Example -->
+            <button class="subject-button enhanced">
+                <div class="subject-button-header">
+                    <span class="subject-button-icon">🇺🇸</span>
+                    <div class="subject-button-title">
+                        <div class="subject-button-name">Angielski</div>
+                        <div class="subject-button-subtitle">15 zadań • 2 dni temu</div>
+                    </div>
+                    <div class="subject-performance-badge average">
+                        <span class="performance-emoji">🟡</span>
+                        <span class="performance-percentage">67%</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill average" style="width: 67%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="stat-correct">✅ 10</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-incorrect">❌ 5</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-total">15 razem</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="subject-button-details">
+                    <div class="subject-categories-info">
+                        <span class="categories-count">📊 5 kategorii</span>
+                        <span class="strong-categories">💪 2 mocnych</span>
+                        <span class="weak-categories">⚠️ 2 do poprawy</span>
+                    </div>
+                    
+                    <div class="subject-button-trend">
+                        <span class="trend declining">📉 Spadek</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-chart">
+                    <div class="mini-chart">
+                        <div class="mini-chart-bars">
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar incorrect"></div>
+                        </div>
+                        <div class="mini-chart-label">Ostatnie 8 zadań</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Poor Performance Example -->
+            <button class="subject-button enhanced">
+                <div class="subject-button-header">
+                    <span class="subject-button-icon">🏛️</span>
+                    <div class="subject-button-title">
+                        <div class="subject-button-name">Historia</div>
+                        <div class="subject-button-subtitle">12 zadań • 3 dni temu</div>
+                    </div>
+                    <div class="subject-performance-badge poor">
+                        <span class="performance-emoji">🔴</span>
+                        <span class="performance-percentage">42%</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill poor" style="width: 42%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="stat-correct">✅ 5</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-incorrect">❌ 7</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-total">12 razem</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="subject-button-details">
+                    <div class="subject-categories-info">
+                        <span class="categories-count">📊 4 kategorii</span>
+                        <span class="weak-categories">⚠️ 3 do poprawy</span>
+                    </div>
+                    
+                    <div class="subject-button-trend">
+                        <span class="trend declining">📉 Spadek</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-chart">
+                    <div class="mini-chart">
+                        <div class="mini-chart-bars">
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar incorrect"></div>
+                        </div>
+                        <div class="mini-chart-label">Ostatnie 8 zadań</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- New Subject Example -->
+            <button class="subject-button enhanced">
+                <div class="subject-button-header">
+                    <span class="subject-button-icon">⚗️</span>
+                    <div class="subject-button-title">
+                        <div class="subject-button-name">Fizyka</div>
+                        <div class="subject-button-subtitle">3 zadania • Tydzień temu</div>
+                    </div>
+                    <div class="subject-performance-badge neutral">
+                        <span class="performance-emoji">📊</span>
+                        <span class="performance-percentage">--%</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill neutral" style="width: 0%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="stat-total">3 zadania • Za mało danych</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="subject-button-details">
+                    <div class="subject-categories-info">
+                        <span class="categories-count">📊 2 kategorii</span>
+                    </div>
+                    
+                    <div class="subject-button-trend">
+                        <span class="trend neutral">📊 Nowe dane</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-chart">
+                    <div class="mini-chart">
+                        <div class="mini-chart-placeholder">Za mało danych</div>
+                    </div>
+                </div>
+            </button>
+
+            <!-- Selected State Example -->
+            <button class="subject-button enhanced selected">
+                <div class="subject-button-header">
+                    <span class="subject-button-icon">🧪</span>
+                    <div class="subject-button-title">
+                        <div class="subject-button-name">Chemia</div>
+                        <div class="subject-button-subtitle">16 zadań • Dzisiaj</div>
+                    </div>
+                    <div class="subject-performance-badge good">
+                        <span class="performance-emoji">🎆</span>
+                        <span class="performance-percentage">81%</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-progress">
+                    <div class="progress-bar-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill good" style="width: 81%"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span class="stat-correct">✅ 13</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-incorrect">❌ 3</span>
+                            <span class="stat-separator">•</span>
+                            <span class="stat-total">16 razem</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="subject-button-details">
+                    <div class="subject-categories-info">
+                        <span class="categories-count">📊 7 kategorii</span>
+                        <span class="strong-categories">💪 5 mocnych</span>
+                        <span class="weak-categories">⚠️ 1 do poprawy</span>
+                    </div>
+                    
+                    <div class="subject-button-trend">
+                        <span class="trend improving">📈 Poprawa</span>
+                    </div>
+                </div>
+                
+                <div class="subject-button-chart">
+                    <div class="mini-chart">
+                        <div class="mini-chart-bars">
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar incorrect"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                            <div class="mini-bar correct"></div>
+                        </div>
+                        <div class="mini-chart-label">Ostatnie 8 zadań</div>
+                    </div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Add click handlers to demo the selection state
+        document.querySelectorAll('.subject-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove selected state from all buttons
+                document.querySelectorAll('.subject-button').forEach(btn => {
+                    btn.classList.remove('selected');
+                });
+                // Add selected state to clicked button
+                button.classList.add('selected');
+            });
+        });
+    </script>
+</body>
+</html>

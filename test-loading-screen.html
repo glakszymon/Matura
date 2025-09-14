@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Loading Screen Demo - System Management</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+            color: #1f2937;
+        }
+        .demo-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .demo-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-left: 4px solid #3b82f6;
+        }
+        .demo-title {
+            color: #3b82f6;
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .demo-description {
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+        .demo-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .demo-button {
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .demo-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+        }
+        .demo-button.secondary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .demo-button.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+        .demo-button.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .info-box h4 {
+            color: #0c4a6e;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+        .info-box p {
+            color: #075985;
+            margin: 0;
+            font-size: 0.9em;
+        }
+        .loading-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .loading-status {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .status-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+        .status-value {
+            font-family: 'Courier New', monospace;
+            background: #1f2937;
+            color: #10b981;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .controls-section {
+            background: #fefce8;
+            border: 2px solid #eab308;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-header">
+        <h1>🔄 Loading Screen System Demo</h1>
+        <p>Comprehensive testing of all loading states and animations</p>
+    </div>
+
+    <div class="demo-section">
+        <div class="demo-title">
+            🎯 Basic Loading Screens
+        </div>
+        <div class="demo-description">
+            Test basic loading functionality with different configurations and timeouts.
+        </div>
+        
+        <div class="demo-buttons">
+            <button class="demo-button" onclick="testBasicLoading()">
+                ⏳ Basic Loading
+            </button>
+            <button class="demo-button secondary" onclick="testQuickLoading()">
+                ⚡ Quick Loading (3s)
+            </button>
+            <button class="demo-button" onclick="testCustomLoading()">
+                🎨 Custom Loading
+            </button>
+            <button class="demo-button warning" onclick="testLongLoading()">
+                ⏰ Long Loading (8s)
+            </button>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <div class="demo-title">
+            📊 Specialized Loading Screens
+        </div>
+        <div class="demo-description">
+            Test specialized loading screens for specific use cases with step-by-step progress.
+        </div>
+        
+        <div class="demo-buttons">
+            <button class="demo-button secondary" onclick="testDataLoading()">
+                📊 Data Loading
+            </button>
+            <button class="demo-button" onclick="testFormSubmission()">
+                📝 Form Submission
+            </button>
+            <button class="demo-button secondary" onclick="testAnalyticsLoading()">
+                📈 Analytics Loading
+            </button>
+            <button class="demo-button" onclick="testSimulatedProcess()">
+                🔄 Simulated Process
+            </button>
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <div class="demo-title">
+            🎮 Interactive Controls
+        </div>
+        <div class="demo-description">
+            Control loading screens dynamically and test advanced features.
+        </div>
+        
+        <div class="demo-buttons">
+            <button class="demo-button warning" onclick="testProgressUpdate()">
+                📊 Progress Update
+            </button>
+            <button class="demo-button secondary" onclick="testStepUpdate()">
+                📋 Step Update
+            </button>
+            <button class="demo-button" onclick="testTextUpdate()">
+                ✏️ Text Update
+            </button>
+            <button class="demo-button danger" onclick="hideAllLoading()">
+                ❌ Hide All Loading
+            </button>
+        </div>
+    </div>
+
+    <div class="info-box">
+        <h4>🔍 How to Test</h4>
+        <p>
+            <strong>Keyboard Shortcut:</strong> Press <code>ESC</code> to force-close any loading screen during development.<br>
+            <strong>Console Logging:</strong> Open Developer Console (F12) to see detailed loading progress logs.<br>
+            <strong>Multiple Loading:</strong> You can stack multiple loading screens - the system will manage them automatically.
+        </p>
+    </div>
+
+    <div class="demo-section">
+        <div class="demo-title">
+            📋 Loading System Status
+        </div>
+        <div class="loading-info">
+            <div class="loading-status">
+                <div class="status-title">Current Loading</div>
+                <div class="status-value" id="current-loading">None</div>
+            </div>
+            <div class="loading-status">
+                <div class="status-title">Loading Stack</div>
+                <div class="status-value" id="loading-stack">Empty</div>
+            </div>
+            <div class="loading-status">
+                <div class="status-title">Is Loading</div>
+                <div class="status-value" id="is-loading">false</div>
+            </div>
+            <div class="loading-status">
+                <div class="status-title">Total Shown</div>
+                <div class="status-value" id="total-shown">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls-section">
+        <h3>⚡ Quick Actions</h3>
+        <p><strong>ESC Key:</strong> Force close current loading | <strong>F12:</strong> Open console for logs</p>
+        
+        <div class="demo-buttons">
+            <button class="demo-button secondary" onclick="refreshStatus()">
+                🔄 Refresh Status
+            </button>
+            <button class="demo-button" onclick="runAllTests()">
+                🧪 Run All Tests
+            </button>
+            <button class="demo-button warning" onclick="showLoadingInfo()">
+                ℹ️ Show Loading Info
+            </button>
+        </div>
+    </div>
+
+    <!-- Include loading system -->
+    <script src="js/config.js"></script>
+    <script src="js/loadingManager.js"></script>
+
+    <script>
+        let testCounter = 0;
+
+        // Update status display
+        function updateStatus() {
+            if (typeof loadingManager !== 'undefined') {
+                const info = loadingManager.getLoadingInfo();
+                document.getElementById('current-loading').textContent = info.current || 'None';
+                document.getElementById('loading-stack').textContent = info.stack.length > 0 ? 
+                    info.stack.map(s => s.text).join(', ') : 'Empty';
+                document.getElementById('is-loading').textContent = info.isLoading;
+                document.getElementById('total-shown').textContent = testCounter;
+            }
+        }
+
+        // Basic loading tests
+        function testBasicLoading() {
+            console.log('🧪 Testing basic loading...');
+            const id = showLoading({
+                text: 'Ładowanie podstawowe...',
+                subtext: 'Test podstawowej funkcjonalności',
+                timeout: 3000
+            });
+            testCounter++;
+            updateStatus();
+        }
+
+        function testQuickLoading() {
+            console.log('🧪 Testing quick loading...');
+            showQuickLoading('Szybkie ładowanie...', 'Automatycznie zniknie za 3 sekundy');
+            testCounter++;
+            updateStatus();
+        }
+
+        function testCustomLoading() {
+            console.log('🧪 Testing custom loading...');
+            const id = showLoading({
+                text: 'Niestandardowe ładowanie',
+                subtext: 'Z własną konfiguracją',
+                progress: true,
+                steps: [
+                    { text: 'Krok pierwszy', status: 'completed' },
+                    { text: 'Krok drugi', status: 'active' },
+                    { text: 'Krok trzeci', status: '' }
+                ],
+                timeout: 5000
+            });
+            testCounter++;
+            updateStatus();
+        }
+
+        function testLongLoading() {
+            console.log('🧪 Testing long loading...');
+            const id = showLoading({
+                text: 'Długotrwałe ładowanie...',
+                subtext: 'Test długotrwałego procesu (8 sekund)',
+                progress: true,
+                timeout: 8000
+            });
+            testCounter++;
+            updateStatus();
+        }
+
+        // Specialized loading tests
+        function testDataLoading() {
+            console.log('🧪 Testing data loading...');
+            showDataLoading();
+            testCounter++;
+            updateStatus();
+        }
+
+        function testFormSubmission() {
+            console.log('🧪 Testing form submission...');
+            showFormSubmission();
+            testCounter++;
+            updateStatus();
+        }
+
+        function testAnalyticsLoading() {
+            console.log('🧪 Testing analytics loading...');
+            showAnalyticsLoading();
+            testCounter++;
+            updateStatus();
+        }
+
+        function testSimulatedProcess() {
+            console.log('🧪 Testing simulated process...');
+            if (typeof loadingManager !== 'undefined') {
+                loadingManager.simulateDataLoading(4000);
+                testCounter++;
+                updateStatus();
+            }
+        }
+
+        // Interactive controls
+        function testProgressUpdate() {
+            console.log('🧪 Testing progress update...');
+            const id = showLoading({
+                text: 'Test aktualizacji postępu',
+                subtext: 'Obserwuj pasek postępu',
+                progress: true
+            });
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 20;
+                updateLoadingProgress(id, progress);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => hideLoading(id), 1000);
+                }
+            }, 500);
+            
+            testCounter++;
+            updateStatus();
+        }
+
+        function testStepUpdate() {
+            console.log('🧪 Testing step update...');
+            const steps = [
+                { text: 'Inicjalizacja...', status: 'active' },
+                { text: 'Przetwarzanie...', status: '' },
+                { text: 'Finalizacja...', status: '' },
+                { text: 'Ukończone!', status: '' }
+            ];
+            
+            const id = showLoading({
+                text: 'Test aktualizacji kroków',
+                subtext: 'Obserwuj zmiany kroków',
+                steps: steps
+            });
+            
+            let currentStep = 0;
+            const interval = setInterval(() => {
+                updateLoadingStep(id, currentStep, 'completed');
+                currentStep++;
+                
+                if (currentStep < steps.length) {
+                    updateLoadingStep(id, currentStep, 'active');
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => hideLoading(id), 1500);
+                }
+            }, 1000);
+            
+            testCounter++;
+            updateStatus();
+        }
+
+        function testTextUpdate() {
+            console.log('🧪 Testing text update...');
+            const id = showLoading({
+                text: 'Początkowy tekst',
+                subtext: 'Początkowy podtekst'
+            });
+            
+            const texts = [
+                { text: 'Aktualizuję tekst...', subtext: 'Pierwszy update' },
+                { text: 'Kolejna zmiana...', subtext: 'Drugi update' },
+                { text: 'Prawie gotowe!', subtext: 'Ostatni update' },
+                { text: 'Ukończone!', subtext: 'Proces zakończony' }
+            ];
+            
+            let textIndex = 0;
+            const interval = setInterval(() => {
+                if (textIndex < texts.length) {
+                    updateLoadingText(id, texts[textIndex].text, texts[textIndex].subtext);
+                    textIndex++;
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => hideLoading(id), 1500);
+                }
+            }, 1200);
+            
+            testCounter++;
+            updateStatus();
+        }
+
+        function hideAllLoading() {
+            console.log('🧪 Hiding all loading screens...');
+            hideLoading();
+            updateStatus();
+        }
+
+        // Utility functions
+        function refreshStatus() {
+            updateStatus();
+            console.log('📊 Status refreshed');
+        }
+
+        function runAllTests() {
+            console.log('🧪 Running all tests sequentially...');
+            
+            const tests = [
+                () => testBasicLoading(),
+                () => setTimeout(testDataLoading, 1000),
+                () => setTimeout(testFormSubmission, 2000),
+                () => setTimeout(testAnalyticsLoading, 3000),
+                () => setTimeout(testProgressUpdate, 4000),
+                () => setTimeout(() => console.log('✅ All tests completed!'), 8000)
+            ];
+            
+            tests.forEach(test => test());
+        }
+
+        function showLoadingInfo() {
+            if (typeof loadingManager !== 'undefined') {
+                const info = loadingManager.getLoadingInfo();
+                console.log('📊 Loading System Info:', info);
+                alert(`Loading Info:\nCurrent: ${info.current || 'None'}\nStack: ${info.stack.length} items\nIs Loading: ${info.isLoading}`);
+            }
+        }
+
+        // Auto-update status every 2 seconds
+        setInterval(updateStatus, 2000);
+
+        // Initialize
+        window.addEventListener('load', () => {
+            console.log('🎉 Loading Screen Demo ready!');
+            updateStatus();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Expandable Task Lists Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .test-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .console-note {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .subject-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>📋 Expandable Task Lists Test</h1>
+        <p>Testing the expandable category task lists with individual task details</p>
+        <div id="connection-status" style="margin-top: 15px;">
+            <span style="background: rgba(255,255,255,0.2); padding: 8px 16px; border-radius: 20px;">
+                🔄 Connecting to system...
+            </span>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>🎮 Data Loading Controls</h2>
+        <p>Load analytics data to see expandable task lists in action:</p>
+        
+        <button class="test-button" onclick="loadAnalyticsData()">
+            📊 Load Analytics Data
+        </button>
+        <button class="test-button" onclick="refreshData()">
+            🔄 Refresh Data
+        </button>
+        <button class="test-button" onclick="clearDisplay()">
+            🧹 Clear Display
+        </button>
+    </div>
+
+    <div class="test-container" id="subject-selection-section">
+        <h2>📚 Subject Selection</h2>
+        <p>Choose a subject to view expandable task lists with individual task details:</p>
+        
+        <div id="subject-buttons" class="subject-buttons">
+            <div style="grid-column: 1 / -1; text-align: center; color: #6b7280; padding: 40px;">
+                Click "Load Analytics Data" to populate subjects from Google Sheets
+            </div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>🔽 Expandable Task Analytics</h2>
+        <div id="analytics-content" class="analytics-content">
+            <h3 style="color: #6b7280;">📊 Task Analytics</h3>
+            <p>Select a subject above to view expandable task lists with categories and individual tasks</p>
+            <div class="console-note">
+                <strong>🎯 How the Expandable Lists Work:</strong><br>
+                1. Select a subject to see its category table<br>
+                2. Click the ▶️ arrow or "Pokaż zadania" button next to any category<br>
+                3. The category will expand to show all individual tasks within that category<br>
+                4. Each task shows: name, correctness status, description, subject, category, and timestamp<br>
+                5. Click the 🔽 arrow or "Ukryj zadania" button to collapse the list
+            </div>
+        </div>
+    </div>
+
+    <div class="console-note">
+        <strong>🔍 Testing Features:</strong><br>
+        1. <strong>Expandable Categories:</strong> Click arrows or buttons to expand/collapse task lists<br>
+        2. <strong>Individual Task Details:</strong> See complete task information including timestamps<br>
+        3. <strong>Visual Feedback:</strong> Tasks are color-coded (green=correct, red=incorrect)<br>
+        4. <strong>Responsive Design:</strong> Try resizing the window to see mobile responsiveness<br>
+        5. <strong>Real Data:</strong> Uses actual Google Sheets data or demo data depending on configuration<br>
+        6. <strong>Console Logging:</strong> Open Developer Console (F12) to see detailed logging
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="js/config.js"></script>
+    <script src="js/loadingManager.js"></script>
+    <script src="js/googleSheetsAPI-v2.js"></script>
+    <script src="js/analyticsManager.js"></script>
+
+    <script>
+        let googleSheetsAPI;
+        let analyticsManager;
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            initializeSystem();
+        });
+
+        function initializeSystem() {
+            console.log('%c🧪 EXPANDABLE TASK LISTS TEST INITIALIZING', 'color: #ffffff; font-weight: bold; font-size: 16px; background: #667eea; padding: 12px; border-radius: 8px;');
+            
+            // Initialize Google Sheets API
+            googleSheetsAPI = new GoogleSheetsAPIv2(CONFIG);
+            
+            // Initialize Analytics Manager
+            analyticsManager = new AnalyticsManager(CONFIG, googleSheetsAPI);
+            
+            // Set global reference for toggle functions
+            window.analyticsManager = analyticsManager;
+            
+            // Update connection status
+            const statusEl = document.getElementById('connection-status');
+            if (statusEl) {
+                const mode = CONFIG.DEMO_MODE ? 'DEMO MODE' : 'PRODUCTION';
+                statusEl.innerHTML = `
+                    <span style="background: rgba(16, 185, 129, 0.2); color: #065f46; padding: 8px 16px; border-radius: 20px;">
+                        ✅ Connected • ${mode}
+                    </span>
+                `;
+            }
+            
+            console.log('%c✅ System initialized successfully - Ready for expandable task lists!', 'color: #10b981; font-weight: bold;');
+        }
+
+        async function loadAnalyticsData() {
+            console.log('%c📊 LOADING EXPANDABLE TASK LIST DATA', 'color: #667eea; font-weight: bold; font-size: 14px;');
+            
+            try {
+                // Show initial loading message
+                showLoading();
+                
+                // Load analytics data - this handles its own rendering internally
+                await analyticsManager.loadAnalyticsData();
+                
+                // The analytics manager handles its own rendering, so we just need to wait
+                console.log('%c✅ Expandable task list data loaded and rendered successfully', 'color: #10b981; font-weight: bold;');
+                
+                // Log final state for debugging
+                if (analyticsManager.subjectAnalytics) {
+                    console.log(`%c🎉 Ready! ${Object.keys(analyticsManager.subjectAnalytics).length} subjects with expandable task lists available`, 'color: #10b981; font-weight: 600;');
+                }
+                
+            } catch (error) {
+                console.error('Error loading expandable task list data:', error);
+                showError('Failed to load task list data: ' + error.message);
+            }
+        }
+
+        function showLoading() {
+            const subjectButtons = document.getElementById('subject-buttons');
+            const analyticsContent = document.getElementById('analytics-content');
+            
+            if (subjectButtons) {
+                subjectButtons.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                        <div class="loading-spinner"></div>
+                        <p>Loading subjects with expandable task lists...</p>
+                    </div>
+                `;
+            }
+            
+            if (analyticsContent) {
+                analyticsContent.innerHTML = `
+                    <div class="loading-spinner"></div>
+                    <p>Processing expandable task list data...</p>
+                `;
+            }
+        }
+
+        function refreshData() {
+            console.log('%c🔄 REFRESHING EXPANDABLE TASK LIST DATA', 'color: #f59e0b; font-weight: bold;');
+            loadAnalyticsData();
+        }
+
+        function clearDisplay() {
+            console.log('%c🧹 CLEARING EXPANDABLE TASK LIST DISPLAY', 'color: #6b7280; font-weight: bold;');
+            
+            const subjectButtons = document.getElementById('subject-buttons');
+            const analyticsContent = document.getElementById('analytics-content');
+            
+            if (subjectButtons) {
+                subjectButtons.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; color: #6b7280; padding: 40px;">
+                        Click "Load Analytics Data" to populate subjects with expandable task lists
+                    </div>
+                `;
+            }
+            
+            if (analyticsContent) {
+                analyticsContent.innerHTML = `
+                    <h3 style="color: #6b7280;">📊 Expandable Task Analytics</h3>
+                    <p>Select a subject above to view expandable task lists with individual task details</p>
+                `;
+            }
+        }
+
+        function showError(message) {
+            const subjectButtons = document.getElementById('subject-buttons');
+            const analyticsContent = document.getElementById('analytics-content');
+            
+            if (subjectButtons) {
+                subjectButtons.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; color: #ef4444; padding: 40px;">
+                        ❌ ${message}
+                    </div>
+                `;
+            }
+            
+            if (analyticsContent) {
+                analyticsContent.innerHTML = `
+                    <div style="color: #ef4444; text-align: center; padding: 40px;">
+                        <h3>❌ Error Loading Expandable Task Lists</h3>
+                        <p>${message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

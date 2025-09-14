@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Correctness Calculation</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+        .correct { background: #d4edda; color: #155724; }
+        .incorrect { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Correctness Calculation</h1>
+    
+    <div class="test-section">
+        <h3>Your API Data Sample</h3>
+        <pre id="api-data"></pre>
+    </div>
+    
+    <div class="test-section">
+        <h3>Correctness Test</h3>
+        <div id="test-results"></div>
+    </div>
+    
+    <button onclick="runTests()">🔄 Run Tests</button>
+
+    <script>
+        // Sample of your actual API data
+        const sampleTasks = [
+            {"task_name":"wwwe","category":"Geometria","subject":"Matematyka","correctness":"Poprawnie","timestamp":"2025-09-12T19:49:10.835Z","points":10,"session_id":""},
+            {"task_name":"ssss","category":"Geometria","subject":"Polski","correctness":"Błędnie","timestamp":"2025-09-12T19:50:09.344Z","points":2,"session_id":""},
+            {"task_name":"wqw","category":"Algebra","subject":"Polski","correctness":"Poprawnie","timestamp":"2025-09-12T19:50:18.254Z","points":10,"session_id":""},
+            {"task_name":"Test Task","category":"Test Category","subject":"Test Subject","correctness":"Poprawnie","timestamp":"2025-09-13T18:12:42.061Z","points":5,"session_id":""}
+        ];
+
+        function testCorrectness(task) {
+            let isCorrect = false;
+            
+            if (task.correctness !== undefined) {
+                if (typeof task.correctness === 'boolean') {
+                    isCorrect = task.correctness;
+                } else if (typeof task.correctness === 'string') {
+                    const corrValue = task.correctness.toLowerCase();
+                    isCorrect = corrValue === 'poprawnie' || corrValue === 'dobrze' || corrValue === 'true';
+                }
+            } else if (task.poprawnosc !== undefined) {
+                const corrValue = task.poprawnosc.toLowerCase();
+                isCorrect = corrValue === 'poprawnie' || corrValue === 'dobrze';
+            }
+            
+            return isCorrect;
+        }
+
+        function runTests() {
+            // Display API data
+            document.getElementById('api-data').textContent = JSON.stringify(sampleTasks, null, 2);
+            
+            // Test each task
+            const results = sampleTasks.map(task => {
+                const isCorrect = testCorrectness(task);
+                return {
+                    task: task.task_name,
+                    correctness: task.correctness,
+                    type: typeof task.correctness,
+                    calculated: isCorrect,
+                    expected: task.correctness === 'Poprawnie' ? true : false
+                };
+            });
+            
+            // Calculate overall percentage
+            const correctCount = results.filter(r => r.calculated).length;
+            const percentage = Math.round((correctCount / results.length) * 100);
+            
+            // Display results
+            let html = `<h4>Individual Results:</h4>`;
+            results.forEach(result => {
+                const correct = result.calculated === result.expected;
+                html += `
+                    <div class="${correct ? 'correct' : 'incorrect'}">
+                        Task: <strong>${result.task}</strong><br>
+                        Raw Value: "${result.correctness}" (${result.type})<br>
+                        Calculated: ${result.calculated}<br>
+                        Expected: ${result.expected}<br>
+                        Test Result: ${correct ? '✅ CORRECT' : '❌ WRONG'}
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="result">
+                    <h4>Overall Statistics:</h4>
+                    Correct Tasks: ${correctCount}/${results.length}<br>
+                    Percentage: <strong>${percentage}%</strong>
+                </div>
+            `;
+            
+            document.getElementById('test-results').innerHTML = html;
+        }
+        
+        // Run tests on load
+        runTests();
+    </script>
+</body>
+</html>

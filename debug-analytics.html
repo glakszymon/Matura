@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Debug Analytics Loading</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .error { color: #ef4444; }
+        .success { color: #10b981; }
+        .warning { color: #f59e0b; }
+        .info { color: #3b82f6; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Analytics Loading Debug</h1>
+    
+    <div class="debug-section">
+        <h2>Step 1: Configuration Loading</h2>
+        <div id="config-status">Loading...</div>
+        <pre id="config-details"></pre>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Step 2: Google Sheets API Initialization</h2>
+        <div id="api-status">Waiting...</div>
+        <pre id="api-details"></pre>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Step 3: Analytics Manager Initialization</h2>
+        <div id="analytics-status">Waiting...</div>
+        <pre id="analytics-details"></pre>
+    </div>
+    
+    <div class="debug-section">
+        <h2>Step 4: Data Loading Test</h2>
+        <div id="data-status">Waiting...</div>
+        <pre id="data-details"></pre>
+        <button onclick="testDataLoading()">🚀 Test Data Loading</button>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="js/config.js"></script>
+    <script src="js/loadingManager.js"></script>
+    <script src="js/googleSheetsAPI-v2.js"></script>
+    <script src="js/analyticsManager.js"></script>
+
+    <script>
+        let googleSheetsAPI;
+        let analyticsManager;
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            debugInitialization();
+        });
+
+        function debugInitialization() {
+            console.log('🔍 Starting debug initialization...');
+            
+            // Step 1: Check configuration
+            try {
+                const configStatus = document.getElementById('config-status');
+                const configDetails = document.getElementById('config-details');
+                
+                if (typeof CONFIG !== 'undefined') {
+                    configStatus.innerHTML = '<span class="success">✅ CONFIG loaded successfully</span>';
+                    configDetails.textContent = JSON.stringify({
+                        DEBUG_MODE: CONFIG.DEBUG_MODE,
+                        DEMO_MODE: CONFIG.DEMO_MODE,
+                        GAS_WEB_APP_URL: CONFIG.GAS_WEB_APP_URL ? 'Set' : 'Missing'
+                    }, null, 2);
+                } else {
+                    configStatus.innerHTML = '<span class="error">❌ CONFIG not found</span>';
+                    return;
+                }
+            } catch (error) {
+                document.getElementById('config-status').innerHTML = '<span class="error">❌ Configuration Error: ' + error.message + '</span>';
+                return;
+            }
+
+            // Step 2: Initialize Google Sheets API
+            try {
+                const apiStatus = document.getElementById('api-status');
+                const apiDetails = document.getElementById('api-details');
+                
+                if (typeof GoogleSheetsAPIv2 !== 'undefined') {
+                    googleSheetsAPI = new GoogleSheetsAPIv2(CONFIG);
+                    apiStatus.innerHTML = '<span class="success">✅ GoogleSheetsAPIv2 initialized</span>';
+                    apiDetails.textContent = JSON.stringify({
+                        initialized: !!googleSheetsAPI,
+                        demoMode: googleSheetsAPI.config?.DEMO_MODE,
+                        methods: Object.getOwnPropertyNames(Object.getPrototypeOf(googleSheetsAPI)).filter(name => name !== 'constructor')
+                    }, null, 2);
+                } else {
+                    apiStatus.innerHTML = '<span class="error">❌ GoogleSheetsAPIv2 not found</span>';
+                    return;
+                }
+            } catch (error) {
+                document.getElementById('api-status').innerHTML = '<span class="error">❌ API Error: ' + error.message + '</span>';
+                return;
+            }
+
+            // Step 3: Initialize Analytics Manager
+            try {
+                const analyticsStatus = document.getElementById('analytics-status');
+                const analyticsDetails = document.getElementById('analytics-details');
+                
+                if (typeof AnalyticsManager !== 'undefined') {
+                    analyticsManager = new AnalyticsManager(CONFIG, googleSheetsAPI);
+                    window.analyticsManager = analyticsManager;
+                    
+                    analyticsStatus.innerHTML = '<span class="success">✅ AnalyticsManager initialized</span>';
+                    analyticsDetails.textContent = JSON.stringify({
+                        initialized: !!analyticsManager,
+                        methods: Object.getOwnPropertyNames(Object.getPrototypeOf(analyticsManager)).filter(name => name !== 'constructor').slice(0, 10)
+                    }, null, 2);
+                } else {
+                    analyticsStatus.innerHTML = '<span class="error">❌ AnalyticsManager not found</span>';
+                    return;
+                }
+            } catch (error) {
+                document.getElementById('analytics-status').innerHTML = '<span class="error">❌ Analytics Error: ' + error.message + '</span>';
+                return;
+            }
+
+            console.log('✅ Debug initialization completed');
+        }
+
+        async function testDataLoading() {
+            const dataStatus = document.getElementById('data-status');
+            const dataDetails = document.getElementById('data-details');
+            
+            dataStatus.innerHTML = '<span class="info">🔄 Loading data...</span>';
+            
+            try {
+                console.log('🚀 Starting data loading test...');
+                
+                // Test loading analytics data
+                const result = await analyticsManager.loadAnalyticsData();
+                
+                dataStatus.innerHTML = '<span class="success">✅ Data loaded successfully</span>';
+                
+                const details = {
+                    result: result,
+                    tasksCount: analyticsManager.tasks ? analyticsManager.tasks.length : 0,
+                    subjectsCount: analyticsManager.subjectAnalytics ? Object.keys(analyticsManager.subjectAnalytics).length : 0,
+                    sampleTask: analyticsManager.tasks ? analyticsManager.tasks[0] : null,
+                    subjects: analyticsManager.subjectAnalytics ? Object.keys(analyticsManager.subjectAnalytics) : []
+                };
+                
+                dataDetails.textContent = JSON.stringify(details, null, 2);
+                
+                console.log('✅ Data loading test completed:', details);
+                
+            } catch (error) {
+                console.error('❌ Data loading error:', error);
+                dataStatus.innerHTML = '<span class="error">❌ Data loading failed: ' + error.message + '</span>';
+                dataDetails.textContent = JSON.stringify({
+                    error: error.message,
+                    stack: error.stack
+                }, null, 2);
+            }
+        }
+    </script>
+</body>
+</html>

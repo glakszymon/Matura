@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Data Loading</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .test-button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Data Loading from Google Sheets</h1>
+    
+    <div class="test-section">
+        <h2>Configuration Test</h2>
+        <button class="test-button" onclick="testConfig()">Test Config</button>
+        <div id="config-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Categories Test</h2>
+        <button class="test-button" onclick="testCategories()">Fetch Categories</button>
+        <div id="categories-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Subjects Test</h2>
+        <button class="test-button" onclick="testSubjects()">Fetch Subjects</button>
+        <div id="subjects-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>GoogleSheetsAPI Test</h2>
+        <button class="test-button" onclick="testGoogleSheetsAPI()">Test API Class</button>
+        <div id="api-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Direct URL Test</h2>
+        <button class="test-button" onclick="testDirectURL()">Test Direct URL Access</button>
+        <div id="url-result" class="result"></div>
+    </div>
+
+    <!-- Include your JavaScript files -->
+    <script src="js/config.js"></script>
+    <script src="js/googleSheets.js"></script>
+    
+    <script>
+        // Test functions
+        async function testConfig() {
+            const resultEl = document.getElementById('config-result');
+            
+            try {
+                resultEl.innerHTML = 'Testing configuration...';
+                
+                const configTest = {
+                    spreadsheetId: CONFIG.SPREADSHEET_ID,
+                    gasUrl: CONFIG.GAS_WEB_APP_URL,
+                    sheets: CONFIG.SHEETS,
+                    debugMode: CONFIG.DEBUG_MODE
+                };
+                
+                resultEl.innerHTML = '✅ Config loaded successfully:\n' + JSON.stringify(configTest, null, 2);
+                resultEl.className = 'result success';
+                
+            } catch (error) {
+                resultEl.innerHTML = '❌ Config test failed:\n' + error.message;
+                resultEl.className = 'result error';
+            }
+        }
+        
+        async function testCategories() {
+            const resultEl = document.getElementById('categories-result');
+            
+            try {
+                resultEl.innerHTML = '🔄 Fetching categories...';
+                
+                const api = new GoogleSheetsAPI(CONFIG);
+                const response = await api.fetchCategories();
+                
+                resultEl.innerHTML = '✅ Categories response:\n' + JSON.stringify(response, null, 2);
+                resultEl.className = 'result success';
+                
+            } catch (error) {
+                resultEl.innerHTML = '❌ Categories test failed:\n' + error.message;
+                resultEl.className = 'result error';
+            }
+        }
+        
+        async function testSubjects() {
+            const resultEl = document.getElementById('subjects-result');
+            
+            try {
+                resultEl.innerHTML = '🔄 Fetching subjects...';
+                
+                const api = new GoogleSheetsAPI(CONFIG);
+                const response = await api.fetchSubjects();
+                
+                resultEl.innerHTML = '✅ Subjects response:\n' + JSON.stringify(response, null, 2);
+                resultEl.className = 'result success';
+                
+            } catch (error) {
+                resultEl.innerHTML = '❌ Subjects test failed:\n' + error.message;
+                resultEl.className = 'result error';
+            }
+        }
+        
+        async function testGoogleSheetsAPI() {
+            const resultEl = document.getElementById('api-result');
+            
+            try {
+                resultEl.innerHTML = '🔄 Testing GoogleSheetsAPI class...';
+                
+                const api = new GoogleSheetsAPI(CONFIG);
+                
+                const apiTest = {
+                    class: 'GoogleSheetsAPI',
+                    config: !!api.config,
+                    isLoading: api.isLoading,
+                    methods: [
+                        'submitData',
+                        'fetchCategories', 
+                        'fetchSubjects',
+                        'validateFormData'
+                    ].map(method => ({
+                        name: method,
+                        exists: typeof api[method] === 'function'
+                    }))
+                };
+                
+                resultEl.innerHTML = '✅ GoogleSheetsAPI test:\n' + JSON.stringify(apiTest, null, 2);
+                resultEl.className = 'result success';
+                
+            } catch (error) {
+                resultEl.innerHTML = '❌ GoogleSheetsAPI test failed:\n' + error.message;
+                resultEl.className = 'result error';
+            }
+        }
+        
+        async function testDirectURL() {
+            const resultEl = document.getElementById('url-result');
+            
+            try {
+                resultEl.innerHTML = '🔄 Testing direct URL access...';
+                
+                const url = `${CONFIG.GAS_WEB_APP_URL}?action=getCategories`;
+                console.log('Testing URL:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                resultEl.innerHTML = '✅ Direct URL test successful:\n' + 
+                    'Status: ' + response.status + '\n' +
+                    'Response: ' + JSON.stringify(data, null, 2);
+                resultEl.className = 'result success';
+                
+            } catch (error) {
+                resultEl.innerHTML = '❌ Direct URL test failed:\n' + 
+                    'Error: ' + error.message + '\n' +
+                    'URL: ' + CONFIG.GAS_WEB_APP_URL;
+                resultEl.className = 'result error';
+            }
+        }
+        
+        // Auto-run config test on load
+        document.addEventListener('DOMContentLoaded', () => {
+            testConfig();
+        });
+    </script>
+</body>
+</html>

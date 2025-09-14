@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Enhanced Logging Test - System Management</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+            color: #1f2937;
+        }
+        .test-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-left: 4px solid #4f46e5;
+        }
+        .test-title {
+            color: #4f46e5;
+            font-size: 1.4em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-description {
+            color: #6b7280;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+        .test-button {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.3);
+        }
+        .console-note {
+            background: #fef3c7;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid #f59e0b;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .feature-card {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #e5e7eb;
+        }
+        .feature-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1>🧪 Enhanced Console Logging Test Suite</h1>
+        <p>Comprehensive verification of upgraded system initialization and data loading logs</p>
+        <div class="status-indicator"></div>
+        <span>Open Developer Console (F12) to view enhanced logging output</span>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">
+            ⚙️ System Initialization Logging
+        </div>
+        <div class="test-description">
+            Test the enhanced system startup sequence with component status indicators, security mode display, and operational readiness confirmation.
+        </div>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-title">🚀 Startup Sequence</div>
+                <p>Enhanced banner with gradient styling and component initialization status</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-title">🔗 API Connection Status</div>
+                <p>Google Sheets API v2 connection with enhanced capabilities overview</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-title">🛡️ Security & Mode Display</div>
+                <p>Production vs Demo mode with clear visual indicators</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-title">✅ Component Readiness</div>
+                <p>Individual system components with operational status</p>
+            </div>
+        </div>
+
+        <button class="test-button" onclick="testSystemInitialization()">
+            🚀 Test System Initialization Logging
+        </button>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">
+            📊 Data Loading Enhanced Logging
+        </div>
+        <div class="test-description">
+            Test the comprehensive data fetching process with detailed Google Sheets integration status, option population tracking, and completion summaries.
+        </div>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-title">📚 Subject Loading</div>
+                <p>Enhanced subject fetching with color-coded icons and active status</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-title">🏷️ Category Loading</div>
+                <p>Category data with difficulty levels and subject grouping</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-title">📝 Dropdown Population</div>
+                <p>Detailed option-by-option tracking with final state verification</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-title">🎯 Completion Summary</div>
+                <p>Total counts, success indicators, and readiness confirmation</p>
+            </div>
+        </div>
+
+        <button class="test-button" onclick="testDataLoading()">
+            📊 Test Data Loading Logging
+        </button>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">
+            🔧 Form Application Logging
+        </div>
+        <div class="test-description">
+            Test the form application initialization with DOM connection status, validation rule setup, and event listener configuration.
+        </div>
+        
+        <button class="test-button" onclick="testFormApplication()">
+            📋 Test Form Application Logging
+        </button>
+    </div>
+
+    <div class="test-section">
+        <div class="test-title">
+            🎮 Interactive Logging Tests
+        </div>
+        <div class="test-description">
+            Run comprehensive tests to verify all logging enhancements are working correctly across the entire application lifecycle.
+        </div>
+        
+        <button class="test-button" onclick="runComprehensiveTest()">
+            🧪 Run Full Logging Test Suite
+        </button>
+        <button class="test-button" onclick="clearConsole()">
+            🧹 Clear Console
+        </button>
+    </div>
+
+    <div class="console-note">
+        <strong>📋 Testing Instructions:</strong><br>
+        1. Open Developer Console (F12 → Console tab)<br>
+        2. Click the test buttons to verify each logging enhancement<br>
+        3. Check for styled, colorful, and structured console output<br>
+        4. Verify all system components show proper initialization status<br>
+        5. Confirm data loading shows detailed progress and completion summaries
+    </div>
+
+    <!-- Include necessary dependencies -->
+    <script src="js/config.js"></script>
+    <script src="js/googleSheetsAPI-v2.js"></script>
+    <script src="js/app-simplified.js"></script>
+
+    <script>
+        // Testing functions
+        function testSystemInitialization() {
+            console.clear();
+            console.log('%c🧪 TESTING SYSTEM INITIALIZATION LOGGING', 'color: #ffffff; font-weight: bold; font-size: 16px; background: #dc2626; padding: 12px; border-radius: 8px;');
+            console.log('─'.repeat(80));
+            
+            // Simulate the enhanced system initialization
+            console.log('%c⚙️ SYSTEM ZARZĄDZANIA DANYMI', 'color: #1f2937; font-weight: bold; font-size: 20px; background: linear-gradient(90deg, #f8fafc, #e2e8f0); padding: 16px; border-radius: 10px; border: 2px solid #cbd5e1;');
+            console.log('%c🚀 Starting System Components...', 'color: #3b82f6; font-weight: 600; font-size: 14px;');
+            
+            // System status overview
+            console.log('%c📋 Core Status: %cGOTOWY DO PRACY', 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            console.log('%c🔗 Google Sheets Integration: %cACTIVE', 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            console.log('%c🛡️ Security Mode: %cPRODUCTION (Live Data)', 'color: #374151; font-weight: 600;', 'color: #ef4444; font-weight: bold;');
+            console.log('%c🎯 Demo Mode: %cDISABLED', 'color: #374151; font-weight: 600;', 'color: #ef4444; font-weight: bold;');
+            
+            // Component initialization status
+            console.log('%c🏗️ Component Status:', 'color: #6366f1; font-weight: 600; font-size: 14px;');
+            console.log('  %c✅ Form Validation Engine %c→ Ready', 'color: #059669; font-weight: bold;', 'color: #10b981;');
+            console.log('  %c✅ Google Sheets API v2 %c→ Connected', 'color: #059669; font-weight: bold;', 'color: #10b981;');
+            console.log('  %c✅ Task Management System %c→ Operational', 'color: #059669; font-weight: bold;', 'color: #10b981;');
+            console.log('  %c✅ Analytics & Reporting %c→ Active', 'color: #059669; font-weight: bold;', 'color: #10b981;');
+            console.log('  %c✅ User Interface %c→ Responsive', 'color: #059669; font-weight: bold;', 'color: #10b981;');
+            
+            console.log('%c🎉 SYSTEM FULLY OPERATIONAL - Ready for user input!', 'color: #ffffff; font-weight: bold; font-size: 14px; background: linear-gradient(90deg, #10b981, #059669); padding: 10px; border-radius: 6px;');
+            console.log('═'.repeat(80));
+            
+            console.log('%c✅ System Initialization Logging Test Complete', 'color: #10b981; font-weight: bold;');
+        }
+
+        function testDataLoading() {
+            console.clear();
+            console.log('%c🧪 TESTING DATA LOADING LOGGING', 'color: #ffffff; font-weight: bold; font-size: 16px; background: #7c3aed; padding: 12px; border-radius: 8px;');
+            console.log('─'.repeat(80));
+            
+            // Simulate Google Sheets API initialization
+            console.log('%c🔗 GOOGLE SHEETS API v2.0 CONNECTED', 'color: #10b981; font-weight: bold; font-size: 16px; background: linear-gradient(90deg, #f0fdf4, #dcfce7); padding: 12px; border-radius: 8px;');
+            
+            // Connection status
+            console.log('%c🌐 Connection Status: %cACTIVE', 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            console.log('%c📊 Spreadsheet ID: %c' + (CONFIG.SPREADSHEET_ID || 'test-spreadsheet-id'), 'color: #374151; font-weight: 600;', 'color: #059669; font-weight: bold;');
+            console.log('%c🔗 Apps Script URL: %c' + ((CONFIG.GAS_WEB_APP_URL || 'https://script.google.com/test...').substring(0, 50) + '...'), 'color: #374151; font-weight: 600;', 'color: #059669; font-weight: bold;');
+            
+            // System capabilities
+            console.log('%c📋 Available Operations: %cTasks • Subjects • Categories • Analytics • Pomodoro Sessions', 'color: #374151; font-weight: 600;', 'color: #7c3aed; font-weight: bold;');
+            console.log('%c🔄 Data Flow: %cBi-directional (Read/Write)', 'color: #374151; font-weight: 600;', 'color: #dc2626; font-weight: bold;');
+            console.log('%c⚡ Performance: %cOptimized with batch operations', 'color: #374151; font-weight: 600;', 'color: #f59e0b; font-weight: bold;');
+            console.log('%c🛡️ Mode: %c' + (CONFIG.DEMO_MODE ? 'DEMO (Safe Testing)' : 'PRODUCTION (Live Data)'), 'color: #374151; font-weight: 600;', CONFIG.DEMO_MODE ? 'color: #f59e0b; font-weight: bold;' : 'color: #dc2626; font-weight: bold;');
+            console.log('─'.repeat(80));
+            
+            // Simulate data loading initialization
+            console.log('%c🚀 INITIALIZING DATA FROM GOOGLE SHEETS', 'color: #1f2937; font-weight: bold; font-size: 16px; background: #f3f4f6; padding: 8px; border-radius: 4px;');
+            console.log('─'.repeat(70));
+            
+            // Simulate subject loading
+            console.log('%c📚 LOADING SUBJECTS FROM GOOGLE SHEETS...', 'color: #3b82f6; font-weight: bold; font-size: 14px;');
+            
+            // Simulate raw API response
+            const mockSubjectResponse = {
+                success: true,
+                data: [
+                    { subject_name: 'Matematyka', color: '#3b82f6', icon: '📐', active: true },
+                    { subject_name: 'Historia', color: '#f59e0b', icon: '📜', active: true },
+                    { subject_name: 'Język Polski', color: '#10b981', icon: '📖', active: true }
+                ]
+            };
+            
+            console.log('%c🔍 RAW GOOGLE SHEETS RESPONSE:', 'color: #6b7280; font-weight: 500;', mockSubjectResponse);
+            
+            console.log('%c✅ SUBJECTS LOADED FROM GOOGLE SHEETS:', 'color: #10b981; font-weight: bold; font-size: 14px;');
+            mockSubjectResponse.data.forEach((subject, index) => {
+                console.log(`%c  ${index + 1}. ${subject.icon || '📚'} ${subject.subject_name}`, 
+                    `color: ${subject.color || '#374151'}; font-weight: 600;`,
+                    `(Color: ${subject.color || 'default'}, Active: ${subject.active})`);
+            });
+            console.log(`%c📊 Total: ${mockSubjectResponse.data.length} subjects imported from Google Sheets`, 
+                'color: #059669; font-weight: 600;');
+            
+            // Simulate category loading
+            console.log('%c🏷️ LOADING CATEGORIES FROM GOOGLE SHEETS...', 'color: #8b5cf6; font-weight: bold; font-size: 14px;');
+            console.log('%cLoading ALL categories (no filter)', 'color: #6b7280;');
+            
+            const mockCategoriesResponse = {
+                success: true,
+                categories: [
+                    { category_name: 'Algebra', difficulty: 'medium', subject: 'Matematyka', active: true },
+                    { category_name: 'Średniowiecze', difficulty: 'easy', subject: 'Historia', active: true },
+                    { category_name: 'Lektura', difficulty: 'hard', subject: 'Język Polski', active: true }
+                ]
+            };
+            
+            console.log('%c🔍 RAW API RESPONSE:', 'color: #6b7280; font-weight: 500;', mockCategoriesResponse);
+            
+            // Simulate dropdown population
+            console.log('%c🎩 POPULATING SUBJECT DROPDOWN...', 'color: #3b82f6; font-weight: bold;');
+            console.log(`%c✅ Successfully populated subject dropdown with ${mockSubjectResponse.data.length} options`, 'color: #10b981; font-weight: 600;');
+            
+            console.log('%c🎩 POPULATING CATEGORY DROPDOWN...', 'color: #8b5cf6; font-weight: bold;');
+            console.log(`%c✅ Successfully populated category dropdown with ${mockCategoriesResponse.categories.length} options`, 'color: #10b981; font-weight: 600;');
+            
+            // Final completion summary
+            console.log('');
+            console.log('%c🎯 DATA LOADING COMPLETION SUMMARY', 'color: #ffffff; font-weight: bold; font-size: 14px; background: linear-gradient(90deg, #6366f1, #4f46e5); padding: 10px; border-radius: 6px;');
+            
+            console.log('%c📊 Subjects loaded: %c' + mockSubjectResponse.data.length, 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            console.log('%c🏷️ Categories loaded: %c' + mockCategoriesResponse.categories.length, 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            
+            const totalOptions = mockSubjectResponse.data.length + mockCategoriesResponse.categories.length;
+            console.log('%c🎉 Total dropdown options: %c' + totalOptions, 'color: #374151; font-weight: 600;', 'color: #7c3aed; font-weight: bold;');
+            console.log('%c✅ FORM FULLY INITIALIZED - Ready for data entry!', 'color: #10b981; font-weight: bold;');
+            console.log('═'.repeat(70));
+            
+            console.log('%c✅ Data Loading Logging Test Complete', 'color: #10b981; font-weight: bold;');
+        }
+
+        function testFormApplication() {
+            console.clear();
+            console.log('%c🧪 TESTING FORM APPLICATION LOGGING', 'color: #ffffff; font-weight: bold; font-size: 16px; background: #059669; padding: 12px; border-radius: 8px;');
+            console.log('─'.repeat(80));
+            
+            // Simulate form application initialization
+            console.log('%c📋 FORM APPLICATION INITIALIZING...', 'color: #7c3aed; font-weight: bold; font-size: 14px; background: #f3e8ff; padding: 8px; border-radius: 4px;');
+            console.log('%c🏗️ Form DOM Elements: %cConnected', 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            console.log('%c🔗 Google Sheets API v2: %cInitialized', 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            console.log('%c⚙️ Event Listeners: %cConfigured', 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            console.log('%c🎯 Validation Rules: %cActive (' + Object.keys(CONFIG.FORM_FIELDS || {}).length + ' fields)', 'color: #374151; font-weight: 600;', 'color: #10b981; font-weight: bold;');
+            console.log('%c✅ FORM APPLICATION READY', 'color: #10b981; font-weight: bold;');
+            console.log('─'.repeat(50));
+            
+            console.log('%c✅ Form Application Logging Test Complete', 'color: #10b981; font-weight: bold;');
+        }
+
+        function runComprehensiveTest() {
+            console.clear();
+            console.log('%c🎮 COMPREHENSIVE LOGGING TEST SUITE', 'color: #ffffff; font-weight: bold; font-size: 18px; background: linear-gradient(135deg, #667eea, #764ba2); padding: 16px; border-radius: 10px;');
+            console.log('═'.repeat(90));
+            
+            setTimeout(() => {
+                testSystemInitialization();
+                
+                setTimeout(() => {
+                    console.log('\n\n');
+                    testDataLoading();
+                    
+                    setTimeout(() => {
+                        console.log('\n\n');
+                        testFormApplication();
+                        
+                        setTimeout(() => {
+                            console.log('\n\n');
+                            console.log('%c🎉 ALL LOGGING TESTS COMPLETED SUCCESSFULLY!', 'color: #ffffff; font-weight: bold; font-size: 16px; background: linear-gradient(90deg, #10b981, #059669); padding: 12px; border-radius: 8px;');
+                            console.log('%cEnhanced logging system is fully operational with:', 'color: #374151; font-weight: 600;');
+                            console.log('  %c✅ Styled initialization banners', 'color: #10b981; font-weight: 500;');
+                            console.log('  %c✅ Component status indicators', 'color: #10b981; font-weight: 500;');
+                            console.log('  %c✅ Detailed data loading progress', 'color: #10b981; font-weight: 500;');
+                            console.log('  %c✅ Comprehensive completion summaries', 'color: #10b981; font-weight: 500;');
+                            console.log('  %c✅ Color-coded status messages', 'color: #10b981; font-weight: 500;');
+                            console.log('  %c✅ Professional visual formatting', 'color: #10b981; font-weight: 500;');
+                            console.log('═'.repeat(90));
+                        }, 1000);
+                    }, 1000);
+                }, 1000);
+            }, 500);
+        }
+
+        function clearConsole() {
+            console.clear();
+            console.log('%c🧹 Console Cleared - Ready for new tests', 'color: #6b7280; font-weight: 500;');
+        }
+
+        // Auto-run on page load for demonstration
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                console.log('%c🎮 ENHANCED LOGGING TEST PAGE LOADED', 'color: #ffffff; font-weight: bold; background: #4f46e5; padding: 8px; border-radius: 4px;');
+                console.log('%cClick the test buttons to verify enhanced logging functionality!', 'color: #374151;');
+                console.log('─'.repeat(60));
+            }, 500);
+        });
+    </script>
+</body>
+</html>

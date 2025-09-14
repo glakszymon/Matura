@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Simple Expandable Tasks Test</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f7fa;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        .status.info { background: #e0f2fe; color: #0277bd; }
+        .status.success { background: #e8f5e8; color: #2e7d32; }
+        .status.error { background: #ffebee; color: #c62828; }
+        .debug-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Simple Expandable Tasks Test</h1>
+        <p>Testing expandable task lists with demo data</p>
+        
+        <div>
+            <button class="btn" onclick="simpleTest()">🚀 Run Simple Test</button>
+            <button class="btn" onclick="clearResults()">🧹 Clear</button>
+        </div>
+
+        <div id="status"></div>
+        <div id="debug-info"></div>
+        
+        <!-- Subject selection area -->
+        <div id="subject-selection-section" style="display: none;">
+            <h2>📚 Select Subject</h2>
+            <div id="subject-buttons" class="subject-buttons"></div>
+        </div>
+        
+        <!-- Analytics content area -->
+        <div id="analytics-content"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script>
+        // Simplified test that bypasses complex loading manager
+        let testResults = {};
+        
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+        
+        function showDebug(data) {
+            const debugEl = document.getElementById('debug-info');
+            debugEl.innerHTML = `<div class="debug-info">${JSON.stringify(data, null, 2)}</div>`;
+        }
+        
+        async function simpleTest() {
+            showStatus('🔄 Starting simple test...', 'info');
+            
+            try {
+                // Step 1: Load and create demo data directly
+                const demoTasks = [
+                    { task_name: 'Równania kwadratowe 1', subject: 'Matematyka', category: 'Algebra', correctness: 'Poprawnie', timestamp: new Date(Date.now() - 0 * 86400000).toISOString(), points: 10 },
+                    { task_name: 'Geometria analityczna 1', subject: 'Matematyka', category: 'Geometria', correctness: 'Błędnie', timestamp: new Date(Date.now() - 0 * 86400000).toISOString(), points: 0 },
+                    { task_name: 'Trójkąty podobne', subject: 'Matematyka', category: 'Geometria', correctness: 'Poprawnie', timestamp: new Date(Date.now() - 5 * 86400000).toISOString(), points: 10 },
+                    { task_name: 'Logarytmy', subject: 'Matematyka', category: 'Algebra', correctness: 'Błędnie', timestamp: new Date(Date.now() - 7 * 86400000).toISOString(), points: 0 },
+                    { task_name: 'Części mowy test', subject: 'Polski', category: 'Części mowy', correctness: 'Poprawnie', timestamp: new Date(Date.now() - 1 * 86400000).toISOString(), points: 10 },
+                    { task_name: 'Składnia zdania', subject: 'Polski', category: 'Składnia', correctness: 'Błędnie', timestamp: new Date(Date.now() - 1 * 86400000).toISOString(), points: 0 },
+                    { task_name: 'Literatura romantyczna', subject: 'Polski', category: 'Literatura', correctness: 'Poprawnie', timestamp: new Date(Date.now() - 4 * 86400000).toISOString(), points: 10 }
+                ];
+                
+                showStatus('✅ Demo data created', 'success');
+                
+                // Step 2: Process data manually (simplified analytics processing)
+                const subjectAnalytics = processTasksIntoSubjects(demoTasks);
+                
+                showDebug({
+                    tasksLoaded: demoTasks.length,
+                    subjects: Object.keys(subjectAnalytics),
+                    subjectAnalytics: subjectAnalytics
+                });
+                
+                // Step 3: Create subject buttons manually
+                createSubjectButtons(subjectAnalytics);
+                
+                showStatus('✅ Test completed! Select a subject to see expandable tasks.', 'success');
+                
+            } catch (error) {
+                showStatus('❌ Test failed: ' + error.message, 'error');
+                showDebug({ error: error.message, stack: error.stack });
+            }
+        }
+        
+        function processTasksIntoSubjects(tasks) {
+            const subjects = {};
+            
+            tasks.forEach(task => {
+                const subject = task.subject;
+                const category = task.category;
+                
+                if (!subjects[subject]) {
+                    subjects[subject] = {
+                        name: subject,
+                        tasks: [],
+                        categories: {}
+                    };
+                }
+                
+                subjects[subject].tasks.push(task);
+                
+                if (!subjects[subject].categories[category]) {
+                    subjects[subject].categories[category] = {
+                        name: category,
+                        tasks: []
+                    };
+                }
+                
+                subjects[subject].categories[category].tasks.push(task);
+            });
+            
+            // Calculate stats for each subject
+            Object.keys(subjects).forEach(subjectName => {
+                const subject = subjects[subjectName];
+                subject.stats = calculateStats(subject.tasks);
+                subject.categoryPerformance = Object.values(subject.categories).map(cat => ({
+                    name: cat.name,
+                    tasks: cat.tasks,
+                    ...calculateStats(cat.tasks)
+                }));
+            });
+            
+            return subjects;
+        }
+        
+        function calculateStats(tasks) {
+            if (!tasks || tasks.length === 0) {
+                return { totalTasks: 0, correctTasks: 0, incorrectTasks: 0, correctPercentage: 0 };
+            }
+            
+            const correctTasks = tasks.filter(task => {
+                const correctness = task.correctness?.toLowerCase();
+                return correctness === 'poprawnie' || correctness === 'dobrze' || correctness === 'true';
+            }).length;
+            
+            const incorrectTasks = tasks.length - correctTasks;
+            const correctPercentage = Math.round((correctTasks / tasks.length) * 100);
+            
+            return {
+                totalTasks: tasks.length,
+                correctTasks: correctTasks,
+                incorrectTasks: incorrectTasks,
+                correctPercentage: correctPercentage
+            };
+        }
+        
+        function createSubjectButtons(subjectAnalytics) {
+            const sectionEl = document.getElementById('subject-selection-section');
+            const buttonsEl = document.getElementById('subject-buttons');
+            
+            sectionEl.style.display = 'block';
+            
+            let buttonsHTML = '';
+            Object.keys(subjectAnalytics).forEach(subjectName => {
+                const subject = subjectAnalytics[subjectName];
+                const stats = subject.stats;
+                
+                buttonsHTML += `
+                    <button class="subject-button" onclick="showSubjectTasks('${subjectName}')">
+                        <span class="subject-button-icon">📚</span>
+                        <div class="subject-button-info">
+                            <div class="subject-button-name">${subjectName}</div>
+                            <div class="subject-button-stats">
+                                ✅ ${stats.correctTasks} • ❌ ${stats.incorrectTasks} • ${stats.correctPercentage}%
+                            </div>
+                        </div>
+                    </button>
+                `;
+            });
+            
+            buttonsEl.innerHTML = buttonsHTML;
+            
+            // Store data globally for access
+            window.testSubjectAnalytics = subjectAnalytics;
+        }
+        
+        function showSubjectTasks(subjectName) {
+            const subject = window.testSubjectAnalytics[subjectName];
+            if (!subject) return;
+            
+            const contentEl = document.getElementById('analytics-content');
+            
+            let categoriesHTML = '';
+            subject.categoryPerformance.forEach((category, index) => {
+                const categoryId = `test-category-${index}`;
+                const tasksCount = category.tasks.length;
+                
+                categoriesHTML += `
+                    <tr class="category-row">
+                        <td class="category-name-cell">
+                            <div class="category-name-container">
+                                <span class="category-expand-icon" onclick="toggleTestCategory('${categoryId}')">▶️</span>
+                                <strong>${category.name}</strong>
+                            </div>
+                        </td>
+                        <td class="center">${category.correctTasks}/${category.totalTasks}</td>
+                        <td class="center">
+                            <span class="analytics-percentage">${category.correctPercentage}%</span>
+                        </td>
+                        <td class="center">
+                            <button class="expand-tasks-btn" onclick="toggleTestCategory('${categoryId}')">
+                                <span class="expand-text">Pokaż zadania (${tasksCount})</span>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="task-details-row" id="${categoryId}" style="display: none;">
+                        <td colspan="4" class="task-details-cell">
+                            <div class="task-details-container">
+                                <div class="task-list-header">
+                                    <h5 class="task-list-title">📝 Zadania w kategorii "${category.name}"</h5>
+                                    <div class="task-list-stats">
+                                        <span class="task-stats-item correct">✅ Poprawne: ${category.correctTasks}</span>
+                                        <span class="task-stats-item incorrect">❌ Niepoprawne: ${category.incorrectTasks}</span>
+                                        <span class="task-stats-item total">📊 Razem: ${category.totalTasks}</span>
+                                    </div>
+                                </div>
+                                <div class="task-list">
+                                    ${renderTestTaskList(category.tasks)}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            contentEl.innerHTML = `
+                <div>
+                    <h3>📊 ${subjectName} - Expandable Task Lists</h3>
+                    <div class="analytics-table-container">
+                        <table class="analytics-table expandable-table">
+                            <thead>
+                                <tr>
+                                    <th>🏷️ Kategoria</th>
+                                    <th class="center">📊 Zadania</th>
+                                    <th class="center">🎯 Skuteczność</th>
+                                    <th class="center">🔽 Szczegóły</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${categoriesHTML}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function renderTestTaskList(tasks) {
+            if (!tasks || tasks.length === 0) {
+                return `
+                    <div class="no-tasks-message">
+                        <div class="no-tasks-icon">📝</div>
+                        <div class="no-tasks-text">Brak zadań w tej kategorii</div>
+                    </div>
+                `;
+            }
+            
+            return tasks.map(task => {
+                const isCorrect = task.correctness?.toLowerCase() === 'poprawnie';
+                const correctnessClass = isCorrect ? 'correct' : 'incorrect';
+                const correctnessText = isCorrect ? '✅ Poprawne' : '❌ Niepoprawne';
+                
+                return `
+                    <div class="task-item ${correctnessClass}">
+                        <div class="task-header">
+                            <div class="task-main-info">
+                                <div class="task-title-section">
+                                    <h6 class="task-title">${task.task_name}</h6>
+                                    <div class="task-status-container">
+                                        <span class="task-correctness ${correctnessClass}">
+                                            ${correctnessText}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="task-meta-badges">
+                                    <span class="task-subject-badge">📚 ${task.subject}</span>
+                                    <span class="task-category">🏷️ ${task.category}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="task-footer">
+                            <div class="task-date-info">
+                                <span class="task-date">🗓️ ${new Date(task.timestamp).toLocaleDateString('pl-PL')}</span>
+                                <span class="task-time">🕰️ ${new Date(task.timestamp).toLocaleTimeString('pl-PL')}</span>
+                            </div>
+                            <div class="task-points">
+                                <span class="task-points-badge">🎯 ${task.points} pkt</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function toggleTestCategory(categoryId) {
+            const detailsRow = document.getElementById(categoryId);
+            const expandIcons = document.querySelectorAll(`[onclick*="${categoryId}"]`);
+            
+            if (detailsRow) {
+                const isVisible = detailsRow.style.display !== 'none';
+                
+                if (isVisible) {
+                    // Hide
+                    detailsRow.style.display = 'none';
+                    expandIcons.forEach(element => {
+                        if (element.classList.contains('category-expand-icon')) {
+                            element.textContent = '▶️';
+                        }
+                        const expandText = element.querySelector('.expand-text');
+                        if (expandText) {
+                            expandText.textContent = expandText.textContent.replace('Ukryj', 'Pokaż');
+                        }
+                    });
+                } else {
+                    // Show
+                    detailsRow.style.display = 'table-row';
+                    expandIcons.forEach(element => {
+                        if (element.classList.contains('category-expand-icon')) {
+                            element.textContent = '🔽';
+                        }
+                        const expandText = element.querySelector('.expand-text');
+                        if (expandText) {
+                            expandText.textContent = expandText.textContent.replace('Pokaż', 'Ukryj');
+                        }
+                    });
+                }
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('status').innerHTML = '';
+            document.getElementById('debug-info').innerHTML = '';
+            document.getElementById('subject-selection-section').style.display = 'none';
+            document.getElementById('analytics-content').innerHTML = '';
+        }
+    </script>
+</body>
+</html>

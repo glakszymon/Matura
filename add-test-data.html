@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Test Data - StudyFlow</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .quick-add {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .quick-add h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .quick-btn {
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .quick-btn:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Dodaj Dane Testowe</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 30px;">
+            Dodaj przykładowe zadania do swojej aplikacji StudyFlow, aby zobaczyć analityki i statystyki w akcji.
+        </p>
+
+        <div class="quick-add">
+            <h3>⚡ Szybkie Dodawanie</h3>
+            <p>Kliknij poniżej, aby dodać gotowe zestawy danych testowych:</p>
+            <div class="quick-buttons">
+                <button class="quick-btn" onclick="addSampleMath()">📐 5 zadań z Matematyki</button>
+                <button class="quick-btn" onclick="addSamplePolish()">📝 5 zadań z Polskiego</button>
+                <button class="quick-btn" onclick="addMixedTasks()">🎲 10 mieszanych zadań</button>
+                <button class="quick-btn" onclick="addWeekData()">📅 Dane z ostatniego tygodnia</button>
+            </div>
+        </div>
+
+        <div style="border-top: 2px solid #e0e0e0; padding-top: 30px;">
+            <h3>✍️ Dodaj Własne Zadanie</h3>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="taskName">Nazwa zadania:</label>
+                    <input type="text" id="taskName" name="taskName" required 
+                           placeholder="np. Równania kwadratowe - zadanie 1">
+                </div>
+
+                <div class="form-group">
+                    <label for="taskSubject">Przedmiot:</label>
+                    <select id="taskSubject" name="taskSubject" required onchange="updateCategories()">
+                        <option value="">Wybierz przedmiot...</option>
+                        <option value="Matematyka">Matematyka</option>
+                        <option value="Polski">Polski</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskCategory">Kategoria:</label>
+                    <select id="taskCategory" name="taskCategory" required>
+                        <option value="">Wybierz kategorię...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="taskCorrectness">Poprawność:</label>
+                    <select id="taskCorrectness" name="taskCorrectness" required>
+                        <option value="">Wybierz...</option>
+                        <option value="true">✅ Poprawnie</option>
+                        <option value="false">❌ Błędnie</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    📤 Dodaj Zadanie
+                </button>
+            </form>
+
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://script.google.com/macros/s/AKfycbymQH1eKq_b3voye1EmpSTWZN_WGaHGBsYIPoPhNlqkDRZdQImXYrrotRuJnanfIA8/exec';
+        const SPREADSHEET_ID = '1a51kwcG8aT4rfTSdhJ6HKSggneURQkQsywZClCcIcJ8';
+
+        const categories = {
+            'Matematyka': ['Algebra', 'Geometria'],
+            'Polski': ['Części mowy', 'Składnia']
+        };
+
+        function updateCategories() {
+            const subject = document.getElementById('taskSubject').value;
+            const categorySelect = document.getElementById('taskCategory');
+            
+            categorySelect.innerHTML = '<option value="">Wybierz kategorię...</option>';
+            
+            if (subject && categories[subject]) {
+                categories[subject].forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                });
+            }
+        }
+
+        function showStatus(message, type = 'success') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        function hideStatus() {
+            document.getElementById('status').style.display = 'none';
+        }
+
+        async function submitTask(taskData) {
+            const formData = new URLSearchParams();
+            formData.append('action', 'addTask');
+            formData.append('spreadsheetId', SPREADSHEET_ID);
+            formData.append('data', JSON.stringify([
+                taskData.taskName,
+                taskData.taskCategory,
+                taskData.taskSubject,
+                taskData.taskCorrectness === 'true' ? 'Poprawnie' : 'Błędnie',
+                new Date().toISOString(),
+                taskData.taskCorrectness === 'true' ? 10 : 2,
+                ''
+            ]));
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData,
+                    mode: 'no-cors'
+                });
+
+                // Since we're using no-cors, we can't check the response
+                // but if no error was thrown, we assume success
+                return { success: true };
+            } catch (error) {
+                console.error('Error:', error);
+                return { success: false, error: error.message };
+            }
+        }
+
+        document.getElementById('taskForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const formData = new FormData(e.target);
+            const taskData = Object.fromEntries(formData);
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Dodawanie...';
+            hideStatus();
+
+            const result = await submitTask(taskData);
+            
+            if (result.success) {
+                showStatus('✅ Zadanie zostało dodane pomyślnie!', 'success');
+                e.target.reset();
+                updateCategories();
+                
+                setTimeout(() => {
+                    showStatus('💡 Odśwież główną aplikację, aby zobaczyć nowe dane w analitykach!', 'success');
+                }, 2000);
+            } else {
+                showStatus('❌ Wystąpił błąd: ' + (result.error || 'Nieznany błąd'), 'error');
+            }
+
+            submitBtn.disabled = false;
+            submitBtn.textContent = '📤 Dodaj Zadanie';
+        });
+
+        async function addSampleMath() {
+            const tasks = [
+                { taskName: 'Równania liniowe - zadanie 1', taskSubject: 'Matematyka', taskCategory: 'Algebra', taskCorrectness: 'true' },
+                { taskName: 'Równania kwadratowe - zadanie 2', taskSubject: 'Matematyka', taskCategory: 'Algebra', taskCorrectness: 'false' },
+                { taskName: 'Nierówności - zadanie 3', taskSubject: 'Matematyka', taskCategory: 'Algebra', taskCorrectness: 'true' },
+                { taskName: 'Pole trójkąta - zadanie 1', taskSubject: 'Matematyka', taskCategory: 'Geometria', taskCorrectness: 'true' },
+                { taskName: 'Obwód koła - zadanie 2', taskSubject: 'Matematyka', taskCategory: 'Geometria', taskCorrectness: 'false' }
+            ];
+
+            await addMultipleTasks(tasks, 'matematyki');
+        }
+
+        async function addSamplePolish() {
+            const tasks = [
+                { taskName: 'Rozpoznawanie rzeczowników', taskSubject: 'Polski', taskCategory: 'Części mowy', taskCorrectness: 'true' },
+                { taskName: 'Odmiana przymiotników', taskSubject: 'Polski', taskCategory: 'Części mowy', taskCorrectness: 'true' },
+                { taskName: 'Czasowniki nieregularne', taskSubject: 'Polski', taskCategory: 'Części mowy', taskCorrectness: 'false' },
+                { taskName: 'Analiza zdania pojedynczego', taskSubject: 'Polski', taskCategory: 'Składnia', taskCorrectness: 'true' },
+                { taskName: 'Zdanie złożone współrzędnie', taskSubject: 'Polski', taskCategory: 'Składnia', taskCorrectness: 'false' }
+            ];
+
+            await addMultipleTasks(tasks, 'polskiego');
+        }
+
+        async function addMixedTasks() {
+            const tasks = [
+                { taskName: 'Funkcje liniowe', taskSubject: 'Matematyka', taskCategory: 'Algebra', taskCorrectness: 'true' },
+                { taskName: 'Wypracowanie - opis', taskSubject: 'Polski', taskCategory: 'Składnia', taskCorrectness: 'true' },
+                { taskName: 'Twierdzenie Pitagorasa', taskSubject: 'Matematyka', taskCategory: 'Geometria', taskCorrectness: 'false' },
+                { taskName: 'Przysłówki i przymiotniki', taskSubject: 'Polski', taskCategory: 'Części mowy', taskCorrectness: 'true' },
+                { taskName: 'Procenty i proporcje', taskSubject: 'Matematyka', taskCategory: 'Algebra', taskCorrectness: 'true' },
+                { taskName: 'Interpunkcja w zdaniach', taskSubject: 'Polski', taskCategory: 'Składnia', taskCorrectness: 'false' },
+                { taskName: 'Pola figur płaskich', taskSubject: 'Matematyka', taskCategory: 'Geometria', taskCorrectness: 'true' },
+                { taskName: 'Analiza tekstu literackiego', taskSubject: 'Polski', taskCategory: 'Składnia', taskCorrectness: 'true' },
+                { taskName: 'Układy równań', taskSubject: 'Matematyka', taskCategory: 'Algebra', taskCorrectness: 'false' },
+                { taskName: 'Czasowniki modalne', taskSubject: 'Polski', taskCategory: 'Części mowy', taskCorrectness: 'true' }
+            ];
+
+            await addMultipleTasks(tasks, 'mieszanych');
+        }
+
+        async function addWeekData() {
+            const tasks = [];
+            const subjects = ['Matematyka', 'Polski'];
+            const mathCategories = ['Algebra', 'Geometria'];
+            const polishCategories = ['Części mowy', 'Składnia'];
+            
+            // Generate tasks for the last 7 days
+            for (let i = 0; i < 15; i++) {
+                const subject = subjects[Math.floor(Math.random() * subjects.length)];
+                const categories = subject === 'Matematyka' ? mathCategories : polishCategories;
+                const category = categories[Math.floor(Math.random() * categories.length)];
+                const correctness = Math.random() > 0.3 ? 'true' : 'false'; // 70% success rate
+                
+                tasks.push({
+                    taskName: `Zadanie ${i + 1} - ${subject}`,
+                    taskSubject: subject,
+                    taskCategory: category,
+                    taskCorrectness: correctness
+                });
+            }
+
+            await addMultipleTasks(tasks, 'z ostatniego tygodnia');
+        }
+
+        async function addMultipleTasks(tasks, description) {
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = '⏳ Dodawanie...';
+            
+            showStatus(`🔄 Dodawanie ${tasks.length} zadań ${description}...`, 'success');
+
+            let successCount = 0;
+            for (const task of tasks) {
+                try {
+                    await submitTask(task);
+                    successCount++;
+                    await new Promise(resolve => setTimeout(resolve, 200)); // Small delay between requests
+                } catch (error) {
+                    console.error('Error adding task:', error);
+                }
+            }
+
+            if (successCount === tasks.length) {
+                showStatus(`✅ Pomyślnie dodano wszystkie ${successCount} zadań ${description}! Odśwież główną aplikację.`, 'success');
+            } else {
+                showStatus(`⚠️ Dodano ${successCount} z ${tasks.length} zadań ${description}. Odśwież główną aplikację.`, 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = btn.textContent.replace('⏳ Dodawanie...', btn.textContent.includes('📐') ? '📐 5 zadań z Matematyki' : 
+                              btn.textContent.includes('📝') ? '📝 5 zadań z Polskiego' :
+                              btn.textContent.includes('🎲') ? '🎲 10 mieszanych zadań' : '📅 Dane z ostatniego tygodnia');
+        }
+
+        // Initialize categories on page load
+        updateCategories();
+    </script>
+</body>
+</html>

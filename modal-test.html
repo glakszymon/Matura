@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal Test - StudyFlow</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f0f0f0;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #5070ff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #3d5af1;
+        }
+        .test-result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #5070ff;
+            background: #f8f9ff;
+        }
+        .debug-console {
+            background: #1a1a1a;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            height: 200px;
+            overflow-y: auto;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Modal Debug Test</h1>
+        <p>This page tests the modal functionality with enhanced debugging.</p>
+        
+        <div>
+            <button class="test-button" onclick="openMainApp()">🚀 Open Main App</button>
+            <button class="test-button" onclick="testModalDirectly()">🪟 Test Modal Directly</button>
+            <button class="test-button" onclick="clearDebugConsole()">🧹 Clear Console</button>
+        </div>
+        
+        <div class="test-result">
+            <h3>Test Instructions:</h3>
+            <ol>
+                <li><strong>Click "Open Main App"</strong> - Opens the main StudyFlow app in a new window</li>
+                <li><strong>Click the FAB (floating ➕ button)</strong> in the bottom right</li>
+                <li><strong>Open Browser Console</strong> (F12 → Console)</li>
+                <li><strong>Check for detailed modal debug info</strong> when clicking the FAB</li>
+                <li><strong>Verify modal appears</strong> and input can be focused</li>
+            </ol>
+        </div>
+        
+        <div class="test-result">
+            <h3>Expected Console Output:</h3>
+            <ul>
+                <li>🚀 <strong>FAB</strong> - When clicking the floating action button</li>
+                <li>🪟 <strong>MODAL DEBUG INFO</strong> - Detailed modal state information</li>
+                <li>🔧 <strong>Attempting to force show modal...</strong> - Force show attempt</li>
+                <li>✅ <strong>Modal forced visible</strong> - Success confirmation</li>
+            </ul>
+        </div>
+        
+        <div class="debug-console" id="debugConsole">
+            <div>🎮 Debug Console Ready...</div>
+            <div>📖 Instructions: Click 'Open Main App' then test the FAB button</div>
+            <div>🔍 Watch this space for real-time debug output</div>
+        </div>
+    </div>
+
+    <script>
+        function openMainApp() {
+            addToConsole('🚀 Opening main StudyFlow app...');
+            window.open('http://localhost:8081', '_blank');
+            addToConsole('✅ App opened in new window');
+            addToConsole('📋 Instructions: Click the FAB (➕) button and check browser console');
+        }
+        
+        function testModalDirectly() {
+            addToConsole('🧪 Direct modal test not available on this page');
+            addToConsole('📋 Please use the main app for modal testing');
+        }
+        
+        function clearDebugConsole() {
+            document.getElementById('debugConsole').innerHTML = '';
+            addToConsole('🧹 Console cleared');
+        }
+        
+        function addToConsole(message) {
+            const console = document.getElementById('debugConsole');
+            const timestamp = new Date().toLocaleTimeString();
+            console.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Add some helpful startup info
+        setTimeout(() => {
+            addToConsole('🎯 Modal Test Page Loaded');
+            addToConsole('🔍 Ready to test StudyFlow modal functionality');
+            addToConsole('💡 Tip: Keep this window open while testing in the main app');
+        }, 1000);
+    </script>
+</body>
+</html>

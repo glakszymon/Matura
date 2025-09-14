@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Debugger Test</title>
+</head>
+<body>
+    <h1>Google Sheets Debugger Test</h1>
+    
+    <button onclick="enableGSDebug()">Enable Debugging</button>
+    <button onclick="testDataLogging()">Test Data Logging</button>
+    <button onclick="showGSSummary()">Show Summary</button>
+    <button onclick="clearGSDebug()">Clear Debug Log</button>
+    <button onclick="disableGSDebug()">Disable Debugging</button>
+
+    <script src="js/googleSheetsDebugger.js"></script>
+    
+    <script>
+        function testDataLogging() {
+            // Test logging different types of data
+            
+            // Test subjects data
+            const subjects = [
+                { name: 'Matematyka', active: true, color: '#2563eb' },
+                { name: 'Polski', active: true, color: '#dc2626' },
+                { name: 'Angielski', active: true, color: '#059669' }
+            ];
+            
+            window.gsDebugger.logDataRetrieved('fetchSubjects', 'subjects', subjects, { duration: 250 });
+            
+            // Test categories data  
+            const categories = [
+                { name: 'Algebra', subject: 'Matematyka', difficulty: 'Średni' },
+                { name: 'Geometria', subject: 'Matematyka', difficulty: 'Trudny' },
+                { name: 'Literatura', subject: 'Polski', difficulty: 'Łatwy' }
+            ];
+            
+            window.gsDebugger.logDataRetrieved('fetchCategories', 'categories', categories, { duration: 180, subjectFilter: 'Matematyka' });
+            
+            // Test tasks data
+            const tasks = [
+                { name: 'Równania kwadratowe', subject: 'Matematyka', correctness: 'Poprawnie', timestamp: new Date().toISOString() },
+                { name: 'Analiza wiersza', subject: 'Polski', correctness: 'Błędnie', timestamp: new Date().toISOString() },
+                { name: 'Grammar test', subject: 'Angielski', correctness: 'Poprawnie', timestamp: new Date().toISOString() }
+            ];
+            
+            window.gsDebugger.logDataRetrieved('getTasks', 'tasks', tasks, { duration: 320 });
+            
+            // Test error logging
+            const testError = new Error('Test connection error');
+            window.gsDebugger.logError('fetchSubjects', testError, { url: 'https://script.google.com/test', retries: 3 });
+            
+            console.log('Test data logged! Check the formatted output above.');
+        }
+    </script>
+</body>
+</html>

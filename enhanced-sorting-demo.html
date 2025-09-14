@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Performance Sorting Demo</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/performance-table.css">
+    <style>
+        body { 
+            padding: 20px; 
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); 
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .demo-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .demo-title { 
+            color: #22223b; 
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .demo-subtitle {
+            color: #6b7280;
+            font-size: 1.2rem;
+            margin-bottom: 32px;
+        }
+        .demo-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: rgba(80, 112, 255, 0.1) 0px 4px 24px;
+            border-left: 4px solid var(--primary-blue, #5070ff);
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        .feature-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #22223b;
+        }
+        .feature-desc {
+            font-size: 0.9rem;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="demo-header">
+            <h1 class="demo-title">🚀 Enhanced Performance Sorting</h1>
+            <p class="demo-subtitle">Sortowanie wydajności z wizualnymi wskaźnikami i animacjami</p>
+        </div>
+        
+        <div class="demo-features">
+            <div class="feature-card">
+                <div class="feature-icon">📈</div>
+                <div class="feature-title">Sortowanie wg skuteczności</div>
+                <div class="feature-desc">Sortuj od najgorszych do najlepszych wyników dla priorytetyzacji nauki</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📉</div>
+                <div class="feature-title">Odwrotne sortowanie</div>
+                <div class="feature-desc">Zobacz najlepsze wyniki na górze dla motywacji</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <div class="feature-title">Kolorowe wskaźniki</div>
+                <div class="feature-desc">Wizualne oznaczenia poziomów wydajności z ramkami</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">✨</div>
+                <div class="feature-title">Animacje sortowania</div>
+                <div class="feature-desc">Płynne animacje podczas zmiany kolejności</div>
+            </div>
+        </div>
+        
+        <div class="categories-performance">
+            <div class="performance-header">
+                <h3>📉 Wydajność kategorii z ulepszonymi opcjami sortowania</h3>
+                <div class="sort-options">
+                    <button class="sort-btn active" data-sort="performance-asc" title="Od najgorszej do najlepszej skuteczności">📈 Najgorsze najpierw</button>
+                    <button class="sort-btn" data-sort="performance-desc" title="Od najlepszej do najgorszej skuteczności">📉 Najlepsze najpierw</button>
+                    <button class="sort-btn" data-sort="name" title="Sortowanie alfabetyczne">🔤 Alfabetycznie</button>
+                    <button class="sort-btn" data-sort="count" title="Od największej do najmniejszej liczby zadań">📊 Według ilości</button>
+                </div>
+            </div>
+            
+            <div class="performance-table" id="demo-performance-table">
+                <!-- This will be populated with the enhanced table -->
+            </div>
+        </div>
+        
+        <div style="margin-top: 40px; padding: 20px; background: white; border-radius: 12px; box-shadow: rgba(80, 112, 255, 0.1) 0px 4px 24px;">
+            <h2>✨ Nowe funkcje sortowania</h2>
+            <ul style="line-height: 1.8; color: #22223b;">
+                <li><strong>📈 Najgorsze najpierw:</strong> Idealny do identyfikacji obszarów wymagających poprawy</li>
+                <li><strong>📉 Najlepsze najpierw:</strong> Świetny do motywacji i widzenia sukcesów</li>
+                <li><strong>🔤 Sortowanie alfabetyczne:</strong> Łatwe wyszukiwanie konkretnych kategorii</li>
+                <li><strong>📊 Według ilości zadań:</strong> Zobacz które kategorie mają najwięcej danych</li>
+                <li><strong>🎨 Kolorowe ramki:</strong> Wizualne oznaczenia poziomu wydajności</li>
+                <li><strong>🏆 Nowe statusy:</strong> Więcej szczegółowych oznaczeń wydajności</li>
+                <li><strong>✨ Animacje:</strong> Płynne przejścia podczas sortowania</li>
+                <li><strong>📱 Responsywność:</strong> Działa na wszystkich urządzeniach</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        // Sample data with various performance levels
+        const sampleData = [
+            { name: 'Składnia', subject: 'Polski', correctTasks: 0, totalTasks: 2, correctPercentage: 0, isWeak: true },
+            { name: 'Funkcje', subject: 'Matematyka', correctTasks: 1, totalTasks: 3, correctPercentage: 33, isWeak: true },
+            { name: 'Średniowiecze', subject: 'Historia', correctTasks: 1, totalTasks: 2, correctPercentage: 50, isWeak: false },
+            { name: 'Algebra', subject: 'Matematyka', correctTasks: 2, totalTasks: 3, correctPercentage: 67, isWeak: false },
+            { name: 'Grammar', subject: 'Angielski', correctTasks: 7, totalTasks: 9, correctPercentage: 78, isWeak: false },
+            { name: 'Literatura', subject: 'Polski', correctTasks: 8, totalTasks: 10, correctPercentage: 80, isWeak: false },
+            { name: 'Vocabulary', subject: 'Angielski', correctTasks: 9, totalTasks: 10, correctPercentage: 90, isWeak: false },
+            { name: 'Części mowy', subject: 'Polski', correctTasks: 10, totalTasks: 10, correctPercentage: 100, isWeak: false }
+        ];
+        
+        let currentData = [...sampleData];
+        
+        // Performance classification function
+        function getPerformanceClass(percentage) {
+            if (percentage >= 90) return 'excellent';
+            if (percentage >= 70) return 'good';
+            if (percentage >= 50) return 'average';
+            if (percentage >= 30) return 'poor';
+            return 'critical';
+        }
+        
+        // Status badge function
+        function getStatusBadge(category) {
+            const percentage = category.correctPercentage;
+            
+            if (percentage >= 90) {
+                return '<span class="status-badge excellent">🏆 Doskonały</span>';
+            } else if (percentage >= 70) {
+                return '<span class="status-badge good">✅ Dobry</span>';
+            } else if (percentage >= 50) {
+                return '<span class="status-badge average">🔶 Średni</span>';
+            } else if (percentage >= 30) {
+                return '<span class="status-badge poor">⚠️ Słaby punkt</span>';
+            } else {
+                return '<span class="status-badge critical">🚨 Wymaga uwagi</span>';
+            }
+        }
+        
+        function renderTable(data) {
+            const tableContainer = document.getElementById('demo-performance-table');
+            
+            const tableHTML = `
+                <table class="performance-table">
+                    <thead>
+                        <tr>
+                            <th>🏷️ Kategoria</th>
+                            <th>📚 Przedmiot</th>
+                            <th>📊 Zadania</th>
+                            <th>🎯 Skuteczność</th>
+                            <th>📈 Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map((category, index) => {
+                            const performanceClass = getPerformanceClass(category.correctPercentage);
+                            const rowClasses = [
+                                'performance-row',
+                                category.isWeak ? 'weak-category' : '',
+                                performanceClass
+                            ].filter(Boolean).join(' ');
+                            
+                            return `
+                            <tr class="${rowClasses}" data-performance="${category.correctPercentage}">
+                                <td class="category-name">
+                                    <div class="category-info">
+                                        <span class="category-title">${category.name}</span>
+                                        <div class="category-rank" style="font-size: 12px; color: #666; margin-top: 2px;">
+                                            #${index + 1} w rankingu
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="subject-name">${category.subject}</td>
+                                <td class="task-count">
+                                    <span class="correct-tasks">${category.correctTasks}</span>
+                                    /
+                                    <span class="total-tasks">${category.totalTasks}</span>
+                                </td>
+                                <td class="performance-percentage">
+                                    <div class="percentage-container">
+                                        <span class="percentage-text ${performanceClass}">
+                                            ${category.correctPercentage}%
+                                        </span>
+                                        <div class="percentage-bar">
+                                            <div class="percentage-fill ${performanceClass}" 
+                                                 style="width: ${category.correctPercentage}%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="performance-status">
+                                    ${getStatusBadge(category)}
+                                </td>
+                            </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            tableContainer.innerHTML = tableHTML;
+            
+            // Add highlight animation
+            setTimeout(() => {
+                const rows = document.querySelectorAll('.performance-row');
+                rows.forEach((row, index) => {
+                    setTimeout(() => {
+                        row.classList.add('just-sorted');
+                        setTimeout(() => {
+                            row.classList.remove('just-sorted');
+                        }, 1000);
+                    }, index * 50);
+                });
+            }, 100);
+        }
+        
+        // Sort functions
+        function sortData(sortType) {
+            let sortedData = [...currentData];
+            
+            switch (sortType) {
+                case 'performance-asc':
+                    sortedData.sort((a, b) => a.correctPercentage - b.correctPercentage);
+                    break;
+                case 'performance-desc':
+                    sortedData.sort((a, b) => b.correctPercentage - a.correctPercentage);
+                    break;
+                case 'name':
+                    sortedData.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'count':
+                    sortedData.sort((a, b) => b.totalTasks - a.totalTasks);
+                    break;
+            }
+            
+            currentData = sortedData;
+            renderTable(currentData);
+        }
+        
+        // Event listeners for sort buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial render
+            renderTable(currentData);
+            
+            // Add sort button listeners
+            const sortButtons = document.querySelectorAll('.sort-btn');
+            sortButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Update active button
+                    sortButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Add sorting animation to existing rows
+                    const existingRows = document.querySelectorAll('.performance-row');
+                    existingRows.forEach(row => {
+                        row.classList.add('sorting');
+                        setTimeout(() => {
+                            row.classList.remove('sorting');
+                        }, 300);
+                    });
+                    
+                    // Sort and render
+                    setTimeout(() => {
+                        sortData(this.dataset.sort);
+                    }, 150);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

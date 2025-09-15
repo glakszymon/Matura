@@ -17,10 +17,6 @@ const CONFIG = {
             SHEET_NAME: 'Subjects',
             RANGE: 'A:D' // subject_name, color, icon, active
         },
-        POMODORO_SESSIONS: {
-            SHEET_NAME: 'PomodoroSessions',
-            RANGE: 'A:F' // id, category, subject, duration, timestamp, notes
-        },
         DAILY_STATS: {
             SHEET_NAME: 'DailyStats',
             RANGE: 'A:E' // date, tasks_count, correct_tasks, streak_day, notes
@@ -41,16 +37,6 @@ const CONFIG = {
     // Google Apps Script Web App URL
     GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwf5dkSIry0HoZ7y57lq_dorJhiBv5XdUKoNqqgwG3XUUZM0kUWGYx2LBp2zsIa-40/exec',
     
-    // Pomodoro Timer Configuration
-    POMODORO: {
-        WORK_DURATION: 25 * 60, // 25 minutes in seconds
-        SHORT_BREAK: 5 * 60, // 5 minutes in seconds
-        LONG_BREAK: 15 * 60, // 15 minutes in seconds
-        LONG_BREAK_INTERVAL: 4, // Long break after every 4 sessions
-        AUTO_START_BREAKS: false,
-        AUTO_START_WORK: false,
-        SOUND_ENABLED: true
-    },
     
     
     // Achievement System - REMOVED - Only use imported data

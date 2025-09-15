@@ -17,6 +17,9 @@ class AnalyticsManager {
         this.categoryPerformance = [];
         this.weakCategories = [];
         
+        // Charts functionality removed
+        this.timeSeriesData = {};
+        
         this.init();
     }
     
@@ -187,7 +190,7 @@ class AnalyticsManager {
             // Update final loading steps
             updateLoadingStep(loadingId, 2, 'completed');
             updateLoadingStep(loadingId, 3, 'active');
-            updateLoadingText(loadingId, 'Generowanie wykresów...');
+            updateLoadingText(loadingId, 'Finalizowanie analityki...');
             
             // Process and render analytics
             // console.log('Processing analytics data...');
@@ -315,7 +318,11 @@ class AnalyticsManager {
         // Process each subject individually 
         this.processSubjectAnalytics();
         
+        // Charts functionality removed - skip time series processing
+        this.timeSeriesData = {};
+        
         console.log('%c✅ [ANALYTICS] Processed Subject Analytics:', 'color: #10b981; font-weight: bold;', this.subjectAnalytics);
+        console.log('%c📈 [ANALYTICS] Time Series Data:', 'color: #8b5cf6; font-weight: bold;', this.timeSeriesData);
     }
     
     /**
@@ -577,53 +584,81 @@ class AnalyticsManager {
             const lastActivity = recentTasks.length > 0 ? 
                 this.formatTimeAgo(recentTasks[recentTasks.length - 1].timestamp) : 'Brak aktywności';
             
+            // Get trend information
+            const trendData = this.getSubjectTrendData(subject.tasks);
+            
             buttonsHTML += `
-                <button class="subject-button enhanced" data-subject="${this.escapeHtml(subjectName)}">
-                    <div class="subject-button-header">
-                        <span class="subject-button-icon">${icon}</span>
-                        <div class="subject-button-title">
-                            <div class="subject-button-name">${this.escapeHtml(subjectName)}</div>
-                            <div class="subject-button-subtitle">${stats.totalTasks} zadań • ${lastActivity}</div>
+                <div class="subject-card" data-subject="${this.escapeHtml(subjectName)}">
+                    <div class="subject-card-header">
+                        <div class="subject-icon-container">
+                            <span class="subject-icon">${icon}</span>
                         </div>
-                        <div class="subject-performance-badge ${performanceClass}">
-                            <span class="performance-emoji">${statusEmoji}</span>
-                            <span class="performance-percentage">${stats.correctPercentage}%</span>
+                        <div class="subject-main-info">
+                            <h3 class="subject-name">${this.escapeHtml(subjectName)}</h3>
+                            <div class="subject-meta">
+                                <span class="tasks-count">${stats.totalTasks} zadań</span>
+                                <span class="last-activity">${lastActivity}</span>
+                            </div>
+                        </div>
+                        <div class="subject-trend ${trendData.class}">
+                            <span class="trend-icon">${trendData.icon}</span>
+                            <span class="trend-text">${trendData.text}</span>
                         </div>
                     </div>
                     
-                    <div class="subject-button-progress">
-                        <div class="progress-bar-container">
-                            <div class="progress-bar">
-                                <div class="progress-fill ${performanceClass}" style="width: ${stats.correctPercentage}%"></div>
+                    <div class="subject-stats-container">
+                        <div class="accuracy-display">
+                            <div class="accuracy-circle ${performanceClass}">
+                                <span class="accuracy-percentage">${stats.correctPercentage}%</span>
+                                <span class="accuracy-label">dokładności</span>
                             </div>
-                            <div class="progress-stats">
-                                <span class="stat-correct">✅ ${stats.correctTasks}</span>
-                                <span class="stat-separator">•</span>
-                                <span class="stat-incorrect">❌ ${stats.incorrectTasks}</span>
-                                <span class="stat-separator">•</span>
-                                <span class="stat-total">${stats.totalTasks} razem</span>
+                            <div class="task-counts">
+                                <div class="correct-tasks">
+                                    <span class="count-icon">✅</span>
+                                    <span class="count-value">${stats.correctTasks}</span>
+                                </div>
+                                <div class="incorrect-tasks">
+                                    <span class="count-icon">❌</span>
+                                    <span class="count-value">${stats.incorrectTasks}</span>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    
-                    <div class="subject-button-details">
-                        <div class="subject-categories-info">
-                            <span class="categories-count">📊 ${categoryPerformance.length} kategorii</span>
-                            ${strongCategoriesCount > 0 ? `<span class="strong-categories">💪 ${strongCategoriesCount} mocnych</span>` : ''}
-                            ${weakCategoriesCount > 0 ? `<span class="weak-categories">⚠️ ${weakCategoriesCount} do poprawy</span>` : ''}
                         </div>
                         
-                        <div class="subject-button-trend">
-                            ${this.getSubjectTrend(subject.tasks)}
+                        <div class="categories-summary">
+                            <div class="performance-metrics">
+                                <div class="metric-row primary">
+                                    <div class="metric-number">${stats.totalTasks}</div>
+                                    <div class="metric-label">Wszystkich zadań</div>
+                                </div>
+                                <div class="metric-separator"></div>
+                                <div class="metric-row success">
+                                    <div class="metric-number">${stats.correctTasks}</div>
+                                    <div class="metric-label">Poprawnych</div>
+                                </div>
+                                <div class="metric-separator"></div>
+                                <div class="metric-row error">
+                                    <div class="metric-number">${stats.incorrectTasks}</div>
+                                    <div class="metric-label">Błędnych</div>
+                                </div>
+                            </div>
+                            <div class="subject-status-badge ${stats.correctPercentage >= 80 ? 'excellent' : stats.correctPercentage >= 60 ? 'good' : stats.correctPercentage >= 40 ? 'average' : 'needs-work'}">
+                                ${stats.correctPercentage >= 80 ? '⭐ Świetnie!' : stats.correctPercentage >= 60 ? '👍 Dobrze' : stats.correctPercentage >= 40 ? '🔄 W toku' : '💪 Trenuj więcej'}
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="subject-button-chart">
-                        <div class="mini-chart">
-                            ${this.renderMiniChart(subject.tasks)}
-                        </div>
+                    <div class="subject-history">
+                        <div class="history-header">${this.getHistoryLabel(subject.tasks.length)}</div>
+                        ${subject.tasks.length >= 2 ? 
+                            `<div class="history-chart">
+                                ${this.renderHistoryChart(subject.tasks)}
+                            </div>` :
+                            `<div class="history-chart-placeholder">
+                                Za mało danych
+                            </div>`
+                        }
                     </div>
-                </button>
+                </div>
             `;
         });
         
@@ -637,10 +672,16 @@ class AnalyticsManager {
      * Setup event listeners for subject buttons
      */
     setupSubjectButtonListeners() {
-        const subjectButtons = document.querySelectorAll('.subject-button');
+        const subjectButtons = document.querySelectorAll('.subject-button, .subject-card');
         
         subjectButtons.forEach(button => {
             button.addEventListener('click', (e) => {
+                // Don't trigger if clicking on footer buttons
+                if (e.target.matches('.view-details-btn, .add-task-btn')) {
+                    e.stopPropagation();
+                    return;
+                }
+                
                 const subjectName = button.getAttribute('data-subject');
                 this.showSubjectAnalytics(subjectName);
             });
@@ -672,13 +713,17 @@ class AnalyticsManager {
         `;
         
         analyticsContent.innerHTML = html;
+        
+        // Charts functionality removed
     }
+    
+    // Charts functionality removed
     
     /**
      * Update selected subject visual state
      */
     updateSelectedSubject(selectedSubjectName) {
-        const subjectButtons = document.querySelectorAll('.subject-button');
+        const subjectButtons = document.querySelectorAll('.subject-button, .subject-card');
         
         subjectButtons.forEach(button => {
             const buttonSubject = button.getAttribute('data-subject');
@@ -733,6 +778,46 @@ class AnalyticsManager {
         if (percentage >= 50) return '🟠'; // orange circle
         if (percentage >= 30) return '🔴'; // red circle
         return '🆘'; // SOS
+    }
+    
+    /**
+     * Get subject trend data for new card format
+     */
+    getSubjectTrendData(tasks) {
+        const trendHTML = this.getSubjectTrend(tasks);
+        
+        // Extract trend info from the HTML
+        if (trendHTML.includes('improving')) {
+            return { class: 'improving', icon: '📈', text: 'Poprawa' };
+        } else if (trendHTML.includes('declining')) {
+            return { class: 'declining', icon: '📉', text: 'Spadek' };
+        } else if (trendHTML.includes('stable')) {
+            return { class: 'stable', icon: '➡️', text: 'Stabilnie' };
+        } else {
+            return { class: 'neutral', icon: '📊', text: 'Nowe dane' };
+        }
+    }
+    
+    /**
+     * Get history label based on task count
+     */
+    getHistoryLabel(taskCount) {
+        if (taskCount === 0) return 'Historia';
+        const displayCount = Math.min(taskCount, 10);
+        return `Ostatnie ${displayCount} zadań`;
+    }
+    
+    /**
+     * Render history chart for new card format
+     */
+    renderHistoryChart(tasks) {
+        const recentTasks = tasks.slice(-10); // Last 10 tasks
+        return recentTasks.map(task => {
+            const isCorrect = task.correctness === 'Poprawnie';
+            const className = isCorrect ? 'correct' : 'incorrect';
+            const statusText = isCorrect ? 'Poprawne' : 'Błędne';
+            return `<div class="mini-bar ${className}" title="${this.escapeHtml(task.name)}: ${statusText}"></div>`;
+        }).join('');
     }
     
     /**
@@ -825,6 +910,8 @@ class AnalyticsManager {
                     </div>
                 </div>
                 
+                <!-- Charts functionality removed -->
+                
                 <!-- Performance Sections -->
                 ${this.renderPerformanceSections(strongCategories, weakCategories)}
                 
@@ -833,6 +920,8 @@ class AnalyticsManager {
             </div>
         `;
     }
+    
+    // Charts functionality removed
     
     /**
      * Render good and weak performance sections
@@ -1543,6 +1632,8 @@ window.toggleCategoryTasks = function(categoryId) {
         }
     }
 };
+
+// Chart functionality removed
 
 // AnalyticsManager will be initialized by app.js
 // This ensures proper initialization order and prevents conflicts

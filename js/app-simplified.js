@@ -104,6 +104,7 @@ class SimplifiedFormApp {
         }
     }
 
+
     /**
      * Handle form submission
      */
@@ -520,6 +521,7 @@ class SimplifiedFormApp {
         if (viewName === 'analytics' && this.analyticsManager) {
             this.analyticsManager.loadAnalyticsData();
         }
+
     }
 
     /**

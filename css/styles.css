@@ -4783,6 +4783,12 @@ input:checked + .toggle-slider:before {
     transition: all 0.2s ease;
     position: relative;
     overflow: hidden;
+    /* Ensure consistent size for all task items */
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
 }
 
 .task-item:hover {
@@ -4802,6 +4808,8 @@ input:checked + .toggle-slider:before {
 
 .task-item.correct {
     border-left-color: var(--accent-green);
+    /* Ensure same size as all task items */
+    min-height: 324px;
 }
 
 .task-item.correct::before {
@@ -4810,6 +4818,8 @@ input:checked + .toggle-slider:before {
 
 .task-item.incorrect {
     border-left-color: var(--accent-red);
+    /* Ensure same size as all task items */
+    min-height: 160px;
 }
 
 .task-item.incorrect::before {
@@ -4830,6 +4840,9 @@ input:checked + .toggle-slider:before {
 
 .task-main-info {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
 }
 
 .task-title-section {
@@ -6346,6 +6359,226 @@ input:checked + .toggle-slider:before {
         margin-right: 4px;
         font-size: 0.9rem;
     }
+}
+
+/* ==============================================
+   MOBILE-FRIENDLY CATEGORY SELECTION
+   ============================================== */
+
+/* Category selection grid for mobile-friendly interface */
+.category-selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.category-selection-item {
+    background: var(--white);
+    border: 2px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    position: relative;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.category-selection-item:hover {
+    border-color: var(--primary-blue);
+    background: var(--gray-50);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.category-selection-item.selected {
+    border-color: var(--primary-blue);
+    background: rgba(30, 64, 175, 0.05);
+    box-shadow: 0 0 0 1px var(--primary-blue);
+}
+
+.category-selection-item.selected::after {
+    content: '✓';
+    position: absolute;
+    top: var(--spacing-xs);
+    right: var(--spacing-xs);
+    background: var(--primary-blue);
+    color: var(--white);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+}
+
+.category-item-content {
+    flex: 1;
+    text-align: left;
+}
+
+.category-item-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-xs);
+}
+
+.category-item-difficulty {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.difficulty-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+}
+
+.difficulty-badge.easy {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.difficulty-badge.medium {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.difficulty-badge.hard {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+    .category-selection-grid {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-xs);
+    }
+    
+    .category-selection-item {
+        min-height: 70px;
+        padding: var(--spacing-lg);
+    }
+    
+    .category-item-name {
+        font-size: var(--font-size-lg);
+    }
+    
+    .category-item-difficulty {
+        font-size: var(--font-size-base);
+    }
+}
+
+@media (max-width: 480px) {
+    .category-selection-item {
+        min-height: 80px;
+        padding: var(--spacing-xl);
+        border-width: 3px;
+    }
+    
+    .category-selection-item.selected::after {
+        width: 24px;
+        height: 24px;
+        font-size: var(--font-size-sm);
+    }
+    
+    .category-item-name {
+        font-size: var(--font-size-xl);
+    }
+    
+    .category-item-difficulty {
+        font-size: var(--font-size-lg);
+    }
+    
+    .difficulty-badge {
+        padding: 4px 12px;
+        font-size: var(--font-size-sm);
+    }
+}
+
+/* Category selection instructions */
+.category-selection-instructions {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    text-align: center;
+}
+
+.category-selection-instructions .instruction-icon {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--spacing-sm);
+}
+
+.category-selection-instructions .instruction-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Selected categories summary */
+.selected-categories-summary {
+    background: rgba(30, 64, 175, 0.05);
+    border: 1px solid var(--primary-blue);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+}
+
+.selected-categories-summary .summary-title {
+    font-weight: 600;
+    color: var(--primary-blue);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.selected-categories-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.selected-category-tag {
+    background: var(--primary-blue);
+    color: var(--white);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.selected-category-tag .remove-category {
+    background: none;
+    border: none;
+    color: var(--white);
+    cursor: pointer;
+    padding: 0;
+    margin-left: 4px;
+    font-size: var(--font-size-xs);
+    opacity: 0.8;
+    transition: opacity var(--transition-fast);
+}
+
+.selected-category-tag .remove-category:hover {
+    opacity: 1;
 }
 
 

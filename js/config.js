@@ -5,10 +5,6 @@ const CONFIG = {
     
     // Sheet configurations for different data types
     SHEETS: {
-        TASKS: {
-            SHEET_NAME: 'Tasks',
-            RANGE: 'A:H' // task_name, description, category, subject, correctness, timestamp, points, session_id
-        },
         CATEGORIES: {
             SHEET_NAME: 'Categories',
             RANGE: 'A:D' // category_name, subject_name, difficulty, active
@@ -24,6 +20,14 @@ const CONFIG = {
         ACHIEVEMENTS: {
             SHEET_NAME: 'Achievements',
             RANGE: 'A:D' // id, name, description, unlocked_date
+        },
+        STUDY_TASKS: {
+            SHEET_NAME: 'StudyTasks',
+            RANGE: 'A:J' // task_id, task_name, description, categories, correctly_completed, start_time, end_time, location, subject, session_id
+        },
+        STUDY_SESSIONS: {
+            SHEET_NAME: 'StudySessions',
+            RANGE: 'A:H' // session_id, start_time, end_time, duration_minutes, total_tasks, correct_tasks, accuracy_percentage, notes
         }
     },
     
@@ -35,7 +39,11 @@ const CONFIG = {
     },
     
     // Google Apps Script Web App URL
-    GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwf5dkSIry0HoZ7y57lq_dorJhiBv5XdUKoNqqgwG3XUUZM0kUWGYx2LBp2zsIa-40/exec',
+    GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzoBNAoL9hsXgGkChm5JTUCnQPLrstVRFlqqYNTXs1Sj6aWpT9x-5aFG2EjGAP6ieQ/exec',
+    
+    // Demo mode for testing analytics without real Google Sheets data
+    DEMO_MODE: false, // Set to false when using real Google Sheets data
+    DEBUG_MODE: true, // Set to false in production
     
     
     
@@ -67,7 +75,7 @@ const CONFIG = {
         }
     },
     
-    // Form field configuration - matches Google Apps Script backend
+    // Form field configuration - matches StudyTasks structure in Google Apps Script backend
     FORM_FIELDS: {
         task_name: {
             name: 'task_name',
@@ -83,19 +91,28 @@ const CONFIG = {
             required: true,
             maxLength: 1000
         },
-        correctness: {
-            name: 'correctness',
-            label: 'Poprawność',
-            type: 'select',
+        categories: {
+            name: 'categories',
+            label: 'Kategorie',
+            type: 'text',
             required: true,
-            options: ['Poprawnie', 'Błędnie', 'Częściowo']
+            maxLength: 200,
+            placeholder: 'np. Części mowy, Składnia lub Essays, World War'
         },
-        category: {
-            name: 'category',
-            label: 'Kategoria',
+        correctly_completed: {
+            name: 'correctly_completed',
+            label: 'Wykonano poprawnie',
             type: 'select',
             required: true,
-            maxLength: 50
+            options: ['Yes', 'No']
+        },
+        location: {
+            name: 'location',
+            label: 'Miejsce',
+            type: 'text',
+            required: false,
+            maxLength: 100,
+            placeholder: 'np. Dom, Biblioteka'
         },
         subject: {
             name: 'subject',
@@ -221,6 +238,129 @@ const CONFIG = {
         DURATION_NORMAL: 300,
         DURATION_SLOW: 500,
         EASING: 'cubic-bezier(0.4, 0, 0.2, 1)'
+    },
+    
+    // Analytics Configuration for Enhanced Features
+    ANALYTICS: {
+        // Performance Over Time Settings
+        PERFORMANCE_OVER_TIME: {
+            DEFAULT_RANGE: 30, // Days to show by default
+            CHART_TYPES: {
+                ACCURACY_TREND: 'line',
+                DAILY_TASKS: 'bar',
+                CUMULATIVE_PROGRESS: 'line'
+            },
+            TIME_PERIODS: {
+                WEEK: { days: 7, label: 'Ostatni tydzień' },
+                MONTH: { days: 30, label: 'Ostatni miesiąc' },
+                QUARTER: { days: 90, label: 'Ostatnie 3 miesiące' },
+                ALL: { days: null, label: 'Cały okres' }
+            }
+        },
+        
+        // Study Consistency Settings
+        CONSISTENCY: {
+            STREAK_THRESHOLD: 1, // Minimum tasks per day to count as active
+            CONSISTENCY_LEVELS: {
+                EXCELLENT: { threshold: 0.9, label: 'Doskonała', emoji: '🔥' },
+                GOOD: { threshold: 0.7, label: 'Dobra', emoji: '👍' },
+                AVERAGE: { threshold: 0.5, label: 'Średnia', emoji: '📊' },
+                POOR: { threshold: 0.3, label: 'Słaba', emoji: '⚠️' },
+                CRITICAL: { threshold: 0, label: 'Wymagająca poprawy', emoji: '🚨' }
+            }
+        },
+        
+        // Time of Day Analysis
+        TIME_OF_DAY: {
+            PERIODS: {
+                MORNING: { start: 6, end: 12, label: 'Rano (6:00-12:00)', emoji: '🌅' },
+                AFTERNOON: { start: 12, end: 18, label: 'Popołudnie (12:00-18:00)', emoji: '☀️' },
+                EVENING: { start: 18, end: 24, label: 'Wieczór (18:00-24:00)', emoji: '🌙' },
+                NIGHT: { start: 0, end: 6, label: 'Noc (0:00-6:00)', emoji: '🌃' }
+            },
+            PERFORMANCE_THRESHOLDS: {
+                HIGH: 80,
+                MEDIUM: 60,
+                LOW: 40
+            }
+        },
+        
+        // Subject Analysis Settings
+        SUBJECT_ANALYSIS: {
+            MIN_TASKS_FOR_ANALYSIS: 5,
+            PERFORMANCE_CATEGORIES: {
+                EXCELLENT: { min: 90, color: '#10b981', label: 'Doskonały' },
+                GOOD: { min: 80, color: '#3b82f6', label: 'Dobry' },
+                SATISFACTORY: { min: 70, color: '#f59e0b', label: 'Zadowalający' },
+                NEEDS_IMPROVEMENT: { min: 60, color: '#ef4444', label: 'Wymaga poprawy' },
+                CRITICAL: { min: 0, color: '#991b1b', label: 'Krytyczny' }
+            },
+            TIME_TRACKING: {
+                EFFICIENT_THRESHOLD: 0.8, // Tasks completed correctly in reasonable time
+                SLOW_THRESHOLD: 0.5
+            }
+        },
+        
+        // Location Impact Analysis
+        LOCATION_ANALYSIS: {
+            DEFAULT_LOCATIONS: ['Dom', 'Biblioteka', 'Szkoła', 'Inne'],
+            PERFORMANCE_COMPARISON: {
+                MIN_TASKS_PER_LOCATION: 3,
+                SIGNIFICANCE_THRESHOLD: 10 // % difference to consider significant
+            }
+        },
+        
+        // Progress Tracking
+        PROGRESS_TRACKING: {
+            IMPROVEMENT_INDICATORS: {
+                STRONG_IMPROVEMENT: { threshold: 20, emoji: '📈', color: '#10b981' },
+                MODERATE_IMPROVEMENT: { threshold: 10, emoji: '⬆️', color: '#3b82f6' },
+                SLIGHT_IMPROVEMENT: { threshold: 5, emoji: '↗️', color: '#f59e0b' },
+                STABLE: { threshold: -5, emoji: '➡️', color: '#6b7280' },
+                SLIGHT_DECLINE: { threshold: -10, emoji: '↘️', color: '#f59e0b' },
+                MODERATE_DECLINE: { threshold: -20, emoji: '⬇️', color: '#ef4444' },
+                STRONG_DECLINE: { threshold: -100, emoji: '📉', color: '#991b1b' }
+            },
+            STREAK_REWARDS: {
+                WEEK: { days: 7, title: 'Tygodniowy mistrz!', emoji: '🔥' },
+                BIWEEK: { days: 14, title: 'Dwutygodniowa passa!', emoji: '⚡' },
+                MONTH: { days: 30, title: 'Miesięczny bohater!', emoji: '🏆' },
+                QUARTER: { days: 90, title: 'Kwartalny mistrz!', emoji: '👑' }
+            }
+        },
+        
+        // Chart Display Settings
+        CHARTS: {
+            COLORS: {
+                PRIMARY: '#667eea',
+                SECONDARY: '#764ba2',
+                SUCCESS: '#10b981',
+                WARNING: '#f59e0b',
+                ERROR: '#ef4444',
+                INFO: '#3b82f6',
+                PURPLE: '#8b5cf6',
+                TEAL: '#06b6d4'
+            },
+            SUBJECT_COLORS: [
+                '#667eea', '#764ba2', '#10b981', '#f59e0b', 
+                '#ef4444', '#3b82f6', '#8b5cf6', '#06b6d4',
+                '#84cc16', '#f97316', '#ec4899', '#6366f1'
+            ],
+            DEFAULT_HEIGHT: 300,
+            RESPONSIVE_BREAKPOINTS: {
+                MOBILE: 768,
+                TABLET: 1024,
+                DESKTOP: 1200
+            }
+        },
+        
+        // Data Export Settings
+        EXPORT: {
+            FORMATS: ['CSV', 'JSON', 'PDF'],
+            DEFAULT_FILENAME_PREFIX: 'analytics_report_',
+            INCLUDE_CHARTS: true,
+            INCLUDE_RAW_DATA: true
+        }
     },
     
     // Development settings removed - use Google Sheets Data Debugger instead

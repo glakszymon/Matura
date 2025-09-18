@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zaawansowana Analityka - System Zarządzania Danymi</title>
+    <meta name="description" content="Kompleksowa analityka wyników nauki z analizą trendu, systematyczności i wydajności">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/enhanced-analytics.css">
+    
+    <!-- Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <!-- Optional: Chart.js adapter for time scale -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+    <div class="enhanced-analytics-container">
+        <!-- Header -->
+        <header class="analytics-header">
+            <h1>📊 Zaawansowana Analityka Nauki</h1>
+            <p>Kompleksowa analiza postępów, systematyczności i wydajności nauki</p>
+        </header>
+        
+        <!-- Navigation Back -->
+        <div style="margin-bottom: 15px; text-align: center;">
+            <a href="index.html" class="analytics-tab" style="text-decoration: none; display: inline-flex; padding: 6px 12px; font-size: 0.85rem;">
+                <span class="analytics-tab-icon">⬅️</span>
+                Powrót
+            </a>
+        </div>
+
+        <!-- Analytics Tabs -->
+        <div class="analytics-tabs">
+            <button class="analytics-tab active" data-tab="overview">
+                <span class="analytics-tab-icon">📈</span>
+                Przegląd
+            </button>
+            <button class="analytics-tab" data-tab="performance">
+                <span class="analytics-tab-icon">🎯</span>
+                Skuteczność w czasie
+            </button>
+            <button class="analytics-tab" data-tab="consistency">
+                <span class="analytics-tab-icon">🔥</span>
+                Systematyczność
+            </button>
+            <button class="analytics-tab" data-tab="time-analysis">
+                <span class="analytics-tab-icon">🕐</span>
+                Analiza czasu
+            </button>
+            <button class="analytics-tab" data-tab="subjects">
+                <span class="analytics-tab-icon">📚</span>
+                Przedmioty
+            </button>
+            <button class="analytics-tab" data-tab="locations">
+                <span class="analytics-tab-icon">📍</span>
+                Lokalizacje
+            </button>
+            <button class="analytics-tab" data-tab="progress">
+                <span class="analytics-tab-icon">🏆</span>
+                Postępy
+            </button>
+        </div>
+
+        <!-- Loading State -->
+        <div id="analytics-loading" class="loading-container" style="display: none;">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Ładowanie analityki...</div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div class="analytics-tab-content active" id="overview-tab">
+            <!-- Key Insights -->
+            <div class="analytics-insights" id="key-insights">
+                <!-- Insights will be populated by JavaScript -->
+            </div>
+            
+            <!-- Enhanced Metrics Grid -->
+            <div class="enhanced-metrics-grid" id="overview-metrics">
+                <!-- Metrics cards will be populated by JavaScript -->
+            </div>
+            
+            <!-- Quick Charts Section -->
+            <div class="enhanced-chart-section">
+                <div class="enhanced-chart-header">
+                    <h2 class="enhanced-chart-title">
+                        📊 Przegląd ostatnich 30 dni
+                    </h2>
+                </div>
+                <div class="enhanced-chart-container" id="overview-performance-chart">
+                    <!-- Chart will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Over Time Tab -->
+        <div class="analytics-tab-content" id="performance-tab">
+            <div class="enhanced-chart-section">
+                <div class="enhanced-chart-header">
+                    <h2 class="enhanced-chart-title">
+                        📈 Skuteczność w czasie
+                    </h2>
+                    <div class="enhanced-chart-controls">
+                        <button class="chart-control-btn active" data-period="WEEK">Tydzień</button>
+                        <button class="chart-control-btn" data-period="MONTH">Miesiąc</button>
+                        <button class="chart-control-btn" data-period="QUARTER">3 miesiące</button>
+                        <button class="chart-control-btn" data-period="ALL">Wszystko</button>
+                    </div>
+                </div>
+                <div class="enhanced-chart-container" id="performance-trend-chart">
+                    <!-- Performance trend chart -->
+                </div>
+            </div>
+
+            <!-- Performance Summary Cards -->
+            <div class="enhanced-metrics-grid" id="performance-metrics">
+                <!-- Performance metrics cards -->
+            </div>
+        </div>
+
+        <!-- Study Consistency Tab -->
+        <div class="analytics-tab-content" id="consistency-tab">
+            <div class="enhanced-chart-section">
+                <div class="enhanced-chart-header">
+                    <h2 class="enhanced-chart-title">
+                        🔥 Kalendarz aktywności
+                    </h2>
+                </div>
+                <div class="enhanced-chart-container" id="consistency-heatmap">
+                    <!-- Consistency heatmap -->
+                </div>
+            </div>
+
+            <!-- Consistency Metrics -->
+            <div class="enhanced-metrics-grid" id="consistency-metrics">
+                <!-- Consistency metrics cards -->
+            </div>
+        </div>
+
+        <!-- Time of Day Analysis Tab -->
+        <div class="analytics-tab-content" id="time-analysis-tab">
+            <div class="enhanced-chart-section">
+                <div class="enhanced-chart-header">
+                    <h2 class="enhanced-chart-title">
+                        🕐 Skuteczność według pory dnia
+                    </h2>
+                </div>
+                <div class="enhanced-chart-container" id="time-of-day-chart">
+                    <!-- Time of day chart -->
+                </div>
+            </div>
+
+            <!-- Time Period Cards -->
+            <div class="time-period-grid" id="time-period-cards">
+                <!-- Time period cards -->
+            </div>
+
+            <!-- Recommendations -->
+            <div class="analytics-insights" id="time-recommendations">
+                <!-- Time-based recommendations -->
+            </div>
+        </div>
+
+        <!-- Subjects Analysis Tab -->
+        <div class="analytics-tab-content" id="subjects-tab">
+            <div class="enhanced-chart-section">
+                <div class="enhanced-chart-header">
+                    <h2 class="enhanced-chart-title">
+                        🎯 Porównanie przedmiotów
+                    </h2>
+                </div>
+                <div class="enhanced-chart-container" id="subjects-radar-chart">
+                    <!-- Subjects radar chart -->
+                </div>
+            </div>
+
+            <!-- Subject Analysis Cards -->
+            <div class="enhanced-metrics-grid" id="subjects-metrics">
+                <!-- Subject metrics cards -->
+            </div>
+        </div>
+
+        <!-- Locations Analysis Tab -->
+        <div class="analytics-tab-content" id="locations-tab">
+            <div class="enhanced-chart-section">
+                <div class="enhanced-chart-header">
+                    <h2 class="enhanced-chart-title">
+                        📍 Skuteczność według lokalizacji
+                    </h2>
+                </div>
+                <div class="enhanced-chart-container" id="location-impact-chart">
+                    <!-- Location impact chart -->
+                </div>
+            </div>
+
+            <!-- Location Comparison -->
+            <div class="location-comparison" id="location-cards">
+                <!-- Location cards -->
+            </div>
+        </div>
+
+        <!-- Progress Tracking Tab -->
+        <div class="analytics-tab-content" id="progress-tab">
+            <!-- Progress Indicators -->
+            <div class="progress-section" id="progress-indicators">
+                <!-- Progress cards -->
+            </div>
+
+            <!-- Achievements -->
+            <div class="analytics-insights" id="achievements-section">
+                <!-- Achievements -->
+            </div>
+
+            <!-- Progress Charts -->
+            <div class="enhanced-chart-section">
+                <div class="enhanced-chart-header">
+                    <h2 class="enhanced-chart-title">
+                        📊 Postęp w czasie
+                    </h2>
+                </div>
+                <div class="enhanced-chart-container" id="progress-over-time-chart">
+                    <!-- Progress over time chart -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="analytics-error" class="error-container" style="display: none;">
+            <div class="error-icon">❌</div>
+            <div class="error-title">Błąd ładowania analityki</div>
+            <div class="error-message">Sprawdź połączenie internetowe i spróbuj ponownie.</div>
+            <button onclick="loadEnhancedAnalytics()" class="error-retry-btn">Spróbuj ponownie</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/googleSheets.js"></script>
+    <script src="js/enhancedAnalytics.js"></script>
+    <script src="js/chartsManager.js"></script>
+    
+    <script>
+        // Enhanced Analytics Application
+        class EnhancedAnalyticsApp {
+            constructor() {
+                this.config = CONFIG;
+                this.googleSheetsAPI = null;
+                this.enhancedAnalytics = null;
+                this.chartsManager = null;
+                this.currentTab = 'overview';
+                this.analyticsData = null;
+                
+                this.init();
+            }
+            
+            async init() {
+                console.log('🚀 Initializing Enhanced Analytics App...');
+                
+                try {
+                    // Initialize Google Sheets API
+                    this.googleSheetsAPI = new GoogleSheetsAPI(this.config);
+                    
+                    // Initialize Enhanced Analytics
+                    this.enhancedAnalytics = new EnhancedAnalytics(this.config, this.googleSheetsAPI);
+                    
+                    // Initialize Charts Manager
+                    this.chartsManager = new ChartsManager(this.enhancedAnalytics);
+                    
+                    // Setup event listeners
+                    this.setupEventListeners();
+                    
+                    // Load analytics data
+                    await this.loadAnalyticsData();
+                    
+                    console.log('✅ Enhanced Analytics App initialized');
+                } catch (error) {
+                    console.error('❌ Error initializing Enhanced Analytics App:', error);
+                    this.showError('Błąd inicjalizacji aplikacji analityki');
+                }
+            }
+            
+            setupEventListeners() {
+                // Tab switching
+                const tabButtons = document.querySelectorAll('.analytics-tab');
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const tabName = e.target.getAttribute('data-tab');
+                        if (tabName) {
+                            this.switchTab(tabName);
+                        }
+                    });
+                });
+                
+                // Chart control buttons
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('chart-control-btn')) {
+                        this.handleChartControl(e.target);
+                    }
+                });
+            }
+            
+            async loadAnalyticsData() {
+                this.showLoading(true);
+                
+                try {
+                    const result = await this.enhancedAnalytics.loadAnalyticsData();
+                    
+                    if (result.success) {
+                        this.analyticsData = result.data;
+                        this.renderAllTabs();
+                        this.showLoading(false);
+                    } else {
+                        throw new Error(result.error || 'Failed to load analytics data');
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading analytics data:', error);
+                    this.showError('Błąd ładowania danych analityki');
+                    this.showLoading(false);
+                }
+            }
+            
+            switchTab(tabName) {
+                // Update active tab button
+                document.querySelectorAll('.analytics-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
+                });
+                
+                // Update active tab content
+                document.querySelectorAll('.analytics-tab-content').forEach(content => {
+                    content.classList.toggle('active', content.id === tabName + '-tab');
+                });
+                
+                this.currentTab = tabName;
+                
+                // Load tab-specific content if needed
+                if (this.analyticsData) {
+                    this.renderTabContent(tabName);
+                }
+            }
+            
+            renderAllTabs() {
+                if (!this.analyticsData) return;
+                
+                this.renderOverviewTab();
+                this.renderPerformanceTab();
+                this.renderConsistencyTab();
+                this.renderTimeAnalysisTab();
+                this.renderSubjectsTab();
+                this.renderLocationsTab();
+                this.renderProgressTab();
+            }
+            
+            renderTabContent(tabName) {
+                if (!this.analyticsData) return;
+                
+                switch(tabName) {
+                    case 'overview':
+                        this.renderOverviewTab();
+                        break;
+                    case 'performance':
+                        this.renderPerformanceTab();
+                        break;
+                    case 'consistency':
+                        this.renderConsistencyTab();
+                        break;
+                    case 'time-analysis':
+                        this.renderTimeAnalysisTab();
+                        break;
+                    case 'subjects':
+                        this.renderSubjectsTab();
+                        break;
+                    case 'locations':
+                        this.renderLocationsTab();
+                        break;
+                    case 'progress':
+                        this.renderProgressTab();
+                        break;
+                }
+            }
+            
+            renderOverviewTab() {
+                const report = this.enhancedAnalytics.generateReport();
+                
+                // Render key insights
+                this.renderInsights(report.insights, 'key-insights');
+                
+                // Render overview metrics
+                this.renderOverviewMetrics();
+                
+                // Render overview chart
+                if (this.analyticsData.performanceOverTime) {
+                    this.chartsManager.createPerformanceOverTimeChart(
+                        this.analyticsData.performanceOverTime, 
+                        'overview-performance-chart'
+                    );
+                }
+            }
+            
+            renderPerformanceTab() {
+                if (this.analyticsData.performanceOverTime) {
+                    this.chartsManager.createPerformanceOverTimeChart(
+                        this.analyticsData.performanceOverTime, 
+                        'performance-trend-chart'
+                    );
+                    
+                    this.renderPerformanceMetrics();
+                }
+            }
+            
+            renderConsistencyTab() {
+                if (this.analyticsData.studyConsistency) {
+                    this.chartsManager.createConsistencyHeatmapChart(
+                        this.analyticsData.studyConsistency, 
+                        'consistency-heatmap'
+                    );
+                    
+                    this.renderConsistencyMetrics();
+                }
+            }
+            
+            renderTimeAnalysisTab() {
+                if (this.analyticsData.timeOfDayAnalysis) {
+                    this.chartsManager.createTimeOfDayChart(
+                        this.analyticsData.timeOfDayAnalysis, 
+                        'time-of-day-chart'
+                    );
+                    
+                    this.renderTimePeriodCards();
+                    this.renderTimeRecommendations();
+                }
+            }
+            
+            renderSubjectsTab() {
+                if (this.analyticsData.subjectAnalysis) {
+                    this.chartsManager.createSubjectRadarChart(
+                        this.analyticsData.subjectAnalysis, 
+                        'subjects-radar-chart'
+                    );
+                    
+                    this.renderSubjectMetrics();
+                }
+            }
+            
+            renderLocationsTab() {
+                if (this.analyticsData.locationAnalysis) {
+                    this.chartsManager.createLocationImpactChart(
+                        this.analyticsData.locationAnalysis, 
+                        'location-impact-chart'
+                    );
+                    
+                    this.renderLocationCards();
+                }
+            }
+            
+            renderProgressTab() {
+                if (this.analyticsData.progressTracking) {
+                    this.renderProgressIndicators();
+                    this.renderAchievements();
+                }
+            }
+            
+            // Helper methods for rendering specific components
+            renderInsights(insights, containerId) {
+                const container = document.getElementById(containerId);
+                if (!container || !insights) return;
+                
+                container.innerHTML = insights.map(insight => `
+                    <div class="insight-card ${insight.type}">
+                        <div class="insight-header">
+                            <span class="insight-emoji">${insight.emoji}</span>
+                            <h3 class="insight-title">${insight.title}</h3>
+                        </div>
+                        <p class="insight-message">${insight.message}</p>
+                    </div>
+                `).join('');
+            }
+            
+            renderOverviewMetrics() {
+                const container = document.getElementById('overview-metrics');
+                if (!container) return;
+                
+                const report = this.enhancedAnalytics.generateReport();
+                const summary = report.summary;
+                
+                container.innerHTML = `
+                    <div class="enhanced-metric-card" style="--metric-color: #10b981;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📝</div>
+                            <span class="metric-card-title">Wszystkich zadań</span>
+                        </div>
+                        <div class="metric-card-value">${summary.totalTasks}</div>
+                        <div class="metric-card-subtitle">zadania wykonane</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #3b82f6;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">🎯</div>
+                            <span class="metric-card-title">Skuteczność</span>
+                        </div>
+                        <div class="metric-card-value">${summary.overallAccuracy}%</div>
+                        <div class="metric-card-subtitle">średnia dokładność</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #f59e0b;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📅</div>
+                            <span class="metric-card-title">Dni nauki</span>
+                        </div>
+                        <div class="metric-card-value">${summary.studyDays}</div>
+                        <div class="metric-card-subtitle">unikalnych dni</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #ef4444;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">🔥</div>
+                            <span class="metric-card-title">Aktualna passa</span>
+                        </div>
+                        <div class="metric-card-value">${summary.currentStreak}</div>
+                        <div class="metric-card-subtitle">dni z rzędu</div>
+                    </div>
+                `;
+            }
+            
+            // Additional rendering methods
+            renderPerformanceMetrics() {
+                const container = document.getElementById('performance-metrics');
+                if (!container || !this.analyticsData.performanceOverTime) return;
+                
+                const perfData = this.analyticsData.performanceOverTime;
+                
+                container.innerHTML = `
+                    <div class="enhanced-metric-card" style="--metric-color: #10b981;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📈</div>
+                            <span class="metric-card-title">Średnia skuteczność</span>
+                        </div>
+                        <div class="metric-card-value">${perfData.averageAccuracy || 0}%</div>
+                        <div class="metric-card-subtitle">w analizowanym okresie</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #3b82f6;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📊</div>
+                            <span class="metric-card-title">Najlepszy dzień</span>
+                        </div>
+                        <div class="metric-card-value">${perfData.bestDay ? perfData.bestDay.accuracy : 0}%</div>
+                        <div class="metric-card-subtitle">${perfData.bestDay ? new Date(perfData.bestDay.date).toLocaleDateString('pl-PL') : 'Brak danych'}</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #f59e0b;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📅</div>
+                            <span class="metric-card-title">Dni nauki</span>
+                        </div>
+                        <div class="metric-card-value">${perfData.totalDays || 0}</div>
+                        <div class="metric-card-subtitle">aktywnych dni</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #ef4444;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">🎯</div>
+                            <span class="metric-card-title">Stabilność</span>
+                        </div>
+                        <div class="metric-card-value">${perfData.consistency || 0}%</div>
+                        <div class="metric-card-subtitle">stałości wyników</div>
+                    </div>
+                `;
+            }
+            
+            renderConsistencyMetrics() {
+                const container = document.getElementById('consistency-metrics');
+                if (!container || !this.analyticsData.studyConsistency) return;
+                
+                const consData = this.analyticsData.studyConsistency;
+                
+                container.innerHTML = `
+                    <div class="enhanced-metric-card" style="--metric-color: #ef4444;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">🔥</div>
+                            <span class="metric-card-title">Aktualna passa</span>
+                        </div>
+                        <div class="metric-card-value">${consData.currentStreak || 0}</div>
+                        <div class="metric-card-subtitle">dni z rzędu</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #10b981;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📊</div>
+                            <span class="metric-card-title">Systematyczność</span>
+                        </div>
+                        <div class="metric-card-value">${consData.consistencyScore || 0}%</div>
+                        <div class="metric-card-subtitle">regularności nauki</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #3b82f6;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📈</div>
+                            <span class="metric-card-title">Najdłuższa passa</span>
+                        </div>
+                        <div class="metric-card-value">${consData.longestStreak || 0}</div>
+                        <div class="metric-card-subtitle">rekordowa passa</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #f59e0b;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📝</div>
+                            <span class="metric-card-title">Średnio zadań/dzień</span>
+                        </div>
+                        <div class="metric-card-value">${consData.averageTasksPerDay || 0}</div>
+                        <div class="metric-card-subtitle">w aktywnych dniach</div>
+                    </div>
+                `;
+            }
+            
+            renderTimePeriodCards() {
+                const container = document.getElementById('time-period-cards');
+                if (!container || !this.analyticsData.timeOfDayAnalysis) return;
+                
+                const timeData = this.analyticsData.timeOfDayAnalysis.timePeriods;
+                let cardsHtml = '';
+                
+                Object.keys(timeData).forEach(period => {
+                    const data = timeData[period];
+                    if (data.total === 0) return;
+                    
+                    const cardClass = this.analyticsData.timeOfDayAnalysis.bestTime && 
+                                     this.analyticsData.timeOfDayAnalysis.bestTime.period === period ? 'best' :
+                                     this.analyticsData.timeOfDayAnalysis.worstTime && 
+                                     this.analyticsData.timeOfDayAnalysis.worstTime.period === period ? 'worst' : '';
+                    
+                    cardsHtml += `
+                        <div class="time-period-card ${cardClass}">
+                            <span class="time-period-emoji">${data.emoji}</span>
+                            <div class="time-period-label">${data.label}</div>
+                            <div class="time-period-accuracy">${data.accuracy}%</div>
+                            <div class="time-period-tasks">${data.correct}/${data.total} zadań</div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = cardsHtml;
+            }
+            
+            renderTimeRecommendations() {
+                const container = document.getElementById('time-recommendations');
+                if (!container || !this.analyticsData.timeOfDayAnalysis) return;
+                
+                const recommendations = this.analyticsData.timeOfDayAnalysis.recommendations || [];
+                this.renderInsights(recommendations, 'time-recommendations');
+            }
+            
+            renderSubjectMetrics() {
+                const container = document.getElementById('subjects-metrics');
+                if (!container || !this.analyticsData.subjectAnalysis) return;
+                
+                const subjectData = this.analyticsData.subjectAnalysis;
+                const bestSubject = subjectData.bestSubject;
+                const worstSubject = subjectData.worstSubject;
+                
+                container.innerHTML = `
+                    <div class="enhanced-metric-card" style="--metric-color: #10b981;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">🏆</div>
+                            <span class="metric-card-title">Najlepszy przedmiot</span>
+                        </div>
+                        <div class="metric-card-value">${bestSubject ? bestSubject.performance.accuracy : 0}%</div>
+                        <div class="metric-card-subtitle">${bestSubject ? bestSubject.name : 'Brak danych'}</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #ef4444;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📚</div>
+                            <span class="metric-card-title">Wymaga poprawy</span>
+                        </div>
+                        <div class="metric-card-value">${worstSubject ? worstSubject.performance.accuracy : 0}%</div>
+                        <div class="metric-card-subtitle">${worstSubject ? worstSubject.name : 'Brak danych'}</div>
+                    </div>
+                    
+                    <div class="enhanced-metric-card" style="--metric-color: #3b82f6;">
+                        <div class="metric-card-header">
+                            <div class="metric-card-icon">📊</div>
+                            <span class="metric-card-title">Przedmiotów</span>
+                        </div>
+                        <div class="metric-card-value">${subjectData.totalSubjects || 0}</div>
+                        <div class="metric-card-subtitle">aktywnych przedmiotów</div>
+                    </div>
+                `;
+            }
+            
+            renderLocationCards() {
+                const container = document.getElementById('location-cards');
+                if (!container || !this.analyticsData.locationAnalysis) return;
+                
+                const locationData = this.analyticsData.locationAnalysis.locations;
+                let cardsHtml = '';
+                
+                Object.keys(locationData).forEach(locationName => {
+                    const data = locationData[locationName];
+                    if (data.total < 3) return; // Skip locations with too few tasks
+                    
+                    const cardClass = this.analyticsData.locationAnalysis.bestLocation && 
+                                     this.analyticsData.locationAnalysis.bestLocation.name === locationName ? 'best' :
+                                     this.analyticsData.locationAnalysis.worstLocation && 
+                                     this.analyticsData.locationAnalysis.worstLocation.name === locationName ? 'worst' : '';
+                    
+                    cardsHtml += `
+                        <div class="location-card ${cardClass}">
+                            <div class="location-name">
+                                📍 ${locationName}
+                            </div>
+                            <div class="location-stats">
+                                <div class="location-accuracy">${data.accuracy}%</div>
+                                <div class="location-tasks-count">${data.correct}/${data.total} zadań</div>
+                            </div>
+                            <div class="location-subjects">
+                                ${Object.keys(data.subjects).map(subject => 
+                                    `<span class="location-subject-tag">${subject}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = cardsHtml;
+            }
+            
+            renderProgressIndicators() {
+                const container = document.getElementById('progress-indicators');
+                if (!container || !this.analyticsData.progressTracking) return;
+                
+                const progressData = this.analyticsData.progressTracking;
+                const overallProgress = progressData.overallProgress;
+                
+                container.innerHTML = `
+                    <div class="progress-card">
+                        <div class="progress-indicator">
+                            <span class="progress-indicator-icon">📈</span>
+                            <div class="progress-indicator-text">
+                                <div class="progress-indicator-title">Ogólny postęp</div>
+                                <div class="progress-indicator-subtitle">${overallProgress ? overallProgress.totalCorrect : 0}/${overallProgress ? overallProgress.totalTasks : 0} poprawnych zadań</div>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" style="width: ${overallProgress ? overallProgress.overallAccuracy : 0}%; --progress-color: #10b981;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-card">
+                        <div class="progress-indicator">
+                            <span class="progress-indicator-icon">${progressData.improvementLevel ? progressData.improvementLevel.emoji : '📊'}</span>
+                            <div class="progress-indicator-text">
+                                <div class="progress-indicator-title">Trend poprawy</div>
+                                <div class="progress-indicator-subtitle">${progressData.improvementTrend ? progressData.improvementTrend.direction : 'stable'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            renderAchievements() {
+                const container = document.getElementById('achievements-section');
+                if (!container || !this.analyticsData.progressTracking) return;
+                
+                const achievements = this.analyticsData.progressTracking.achievements || [];
+                const achievedOnes = achievements.filter(a => a.achieved);
+                
+                const achievementsHtml = achievedOnes.map(achievement => `
+                    <div class="insight-card achievement">
+                        <div class="insight-header">
+                            <span class="insight-emoji">${achievement.emoji}</span>
+                            <h3 class="insight-title">${achievement.title}</h3>
+                        </div>
+                        <p class="insight-message">Gratulacje! Osiągnąłeś ${achievement.title}!</p>
+                    </div>
+                `).join('');
+                
+                if (achievementsHtml) {
+                    container.innerHTML = achievementsHtml;
+                } else {
+                    container.innerHTML = `
+                        <div class="insight-card info">
+                            <div class="insight-header">
+                                <span class="insight-emoji">🎯</span>
+                                <h3 class="insight-title">Osiągnięcia</h3>
+                            </div>
+                            <p class="insight-message">Kontynuuj naukę, aby odblokować pierwsze osiągnięcia!</p>
+                        </div>
+                    `;
+                }
+            }
+            
+            showLoading(show) {
+                const loadingElement = document.getElementById('analytics-loading');
+                if (loadingElement) {
+                    loadingElement.style.display = show ? 'flex' : 'none';
+                }
+            }
+            
+            showError(message) {
+                const errorElement = document.getElementById('analytics-error');
+                if (errorElement) {
+                    errorElement.querySelector('.error-message').textContent = message;
+                    errorElement.style.display = 'block';
+                }
+            }
+            
+            handleChartControl(button) {
+                // Handle chart control button clicks
+                const period = button.getAttribute('data-period');
+                if (period) {
+                    // Update active button
+                    button.parentElement.querySelectorAll('.chart-control-btn').forEach(btn => {
+                        btn.classList.remove('active');
+                    });
+                    button.classList.add('active');
+                    
+                    // Update chart based on period
+                    this.updateChartPeriod(period);
+                }
+            }
+            
+            updateChartPeriod(period) {
+                // Implementation for updating chart period
+                console.log('Updating chart period to:', period);
+                // This would filter the data and re-render the chart
+            }
+        }
+        
+        // Global function for retry
+        function loadEnhancedAnalytics() {
+            if (window.enhancedAnalyticsApp) {
+                window.enhancedAnalyticsApp.loadAnalyticsData();
+            }
+        }
+        
+        // Initialize the app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            window.enhancedAnalyticsApp = new EnhancedAnalyticsApp();
+        });
+        
+        // Make app available globally for debugging
+        window.EnhancedAnalyticsApp = EnhancedAnalyticsApp;
+    </script>
+</body>
+</html>

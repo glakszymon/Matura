@@ -267,43 +267,73 @@ class AnalyticsManager {
     }
     
     /**
-     * Load tasks data (from Google Sheets or demo mode)
+     * Load tasks data from StudyTasks (SessionTasks) sheet for analytics
      */
     async loadTasksData() {
-        console.log('%c📊 [ANALYTICS] Loading Tasks Data...', 'color: #2563eb; font-weight: bold; font-size: 14px;');
+        console.log('%c📊 [ANALYTICS] Loading StudyTasks Data...', 'color: #2563eb; font-weight: bold; font-size: 14px;');
         console.log('Demo mode:', this.googleSheetsAPI?.config?.DEMO_MODE);
         
-        // Use GoogleSheetsAPI getTasks method for both demo and real data
+        // Use GoogleSheetsAPI getStudyTasks method to get data from StudyTasks sheet
         try {
-            const tasksResponse = await this.googleSheetsAPI.getTasks();
+            const tasksResponse = await this.googleSheetsAPI.getStudyTasks();
             
             if (tasksResponse.success) {
                 const tasks = tasksResponse.data || tasksResponse.tasks || [];
                 
-                // Normalize task format for analytics
-                this.tasks = tasks.map(task => ({
-                    name: task.task_name || task.name,
-                    subject: task.subject || task.przedmiot || 'Unknown',
-                    category: task.category || task.kategoria || 'Unknown',
-                    correctness: task.correctness,
-                    timestamp: task.timestamp,
-                    date: task.timestamp ? task.timestamp.split('T')[0] : new Date().toISOString().split('T')[0],
-                    description: task.description || ''
-                }));
+                console.log('%c📋 [ANALYTICS] Raw StudyTasks data:', 'color: #7c3aed; font-weight: bold;', tasks);
                 
-                console.log('%c✅ Analytics tasks loaded:', 'color: #10b981; font-weight: 600;', this.tasks.length, 'tasks');
-                console.log('%c🔍 Sample task data:', 'color: #8b5cf6; font-weight: 600;', this.tasks.slice(0, 3));
+                // Normalize task format for analytics - StudyTasks structure with multiple categories support
+                this.tasks = tasks.map(task => {
+                    const categoriesString = task.categories || task.category || 'Unknown';
+                    const categoriesArray = this.parseCategoriesString(categoriesString);
+                    
+                    return {
+                        name: task.task_name || task.name || 'Unnamed Task',
+                        subject: task.subject || 'Unknown',
+                        category: categoriesString, // Keep original for backward compatibility
+                        categories: categoriesArray, // Array of individual categories
+                        categoriesString: categoriesString, // Original string for display
+                        correctness: task.correctly_completed === 'Yes' || task.correctness === 'Poprawnie' || task.correctness === true,
+                        timestamp: task.start_time || task.timestamp || new Date().toISOString(),
+                        date: (task.start_time || task.timestamp || new Date().toISOString()).split('T')[0],
+                        description: task.description || '',
+                        location: task.location || '',
+                        session_id: task.session_id || '',
+                        task_id: task.task_id || '',
+                        // Additional StudyTasks fields
+                        end_time: task.end_time || null
+                    };
+                });
+                
+                console.log('%c✅ Analytics StudyTasks loaded:', 'color: #10b981; font-weight: 600;', this.tasks.length, 'tasks');
+                console.log('%c🔍 Sample StudyTask data:', 'color: #8b5cf6; font-weight: 600;', this.tasks.slice(0, 3));
                 return { success: true, tasks: this.tasks };
             } else {
-                console.error('Failed to load tasks for analytics:', tasksResponse.error);
+                console.error('Failed to load StudyTasks for analytics:', tasksResponse.error);
                 this.tasks = [];
                 return { success: false, tasks: [], error: tasksResponse.error };
             }
         } catch (error) {
-            console.error('Error loading tasks data for analytics:', error);
+            console.error('Error loading StudyTasks data for analytics:', error);
             this.tasks = [];
             return { success: false, tasks: [], error: error.message };
         }
+    }
+    
+    /**
+     * Parse categories string into array of individual categories
+     * @param {string} categoriesString - Comma-separated categories string
+     * @returns {Array} Array of individual category names
+     */
+    parseCategoriesString(categoriesString) {
+        if (!categoriesString || categoriesString === 'Unknown') {
+            return ['Unknown'];
+        }
+        
+        return categoriesString
+            .split(',')
+            .map(cat => cat.trim())
+            .filter(cat => cat && cat.length > 0);
     }
     
     /**
@@ -326,7 +356,7 @@ class AnalyticsManager {
     }
     
     /**
-     * Group tasks by subject - each subject completely separate
+     * Group tasks by subject - each subject completely separate with multiple categories support
      */
     groupTasksBySubject() {
         const subjectGroups = {};
@@ -342,15 +372,18 @@ class AnalyticsManager {
             }
             subjectGroups[subject].tasks.push(task);
             
-            // Group by categories within each subject
-            const category = task.category || task.kategoria || 'Unknown';
-            if (!subjectGroups[subject].categories[category]) {
-                subjectGroups[subject].categories[category] = {
-                    name: category,
-                    tasks: []
-                };
-            }
-            subjectGroups[subject].categories[category].tasks.push(task);
+            // Group by individual categories within each subject (handle multiple categories per task)
+            const categories = task.categories || ['Unknown'];
+            categories.forEach(categoryName => {
+                if (!subjectGroups[subject].categories[categoryName]) {
+                    subjectGroups[subject].categories[categoryName] = {
+                        name: categoryName,
+                        tasks: []
+                    };
+                }
+                // Add task to each category it belongs to
+                subjectGroups[subject].categories[categoryName].tasks.push(task);
+            });
         });
         
         return subjectGroups;

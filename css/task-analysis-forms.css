@@ -1,0 +1,376 @@
+/* Task Analysis Forms Styles */
+
+/* Analysis Modal Specific Styles */
+.study-analysis-content {
+    width: 90%;
+    max-width: 1200px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.analysis-form-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+/* Individual Task Form */
+.task-analysis-form {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.task-analysis-form:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #667eea;
+}
+
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.task-title {
+    margin: 0;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.task-number {
+    font-weight: 700;
+    font-size: 1.1em;
+}
+
+.correctness-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.correctness-badge.correct {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.correctness-badge.incorrect {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+/* Form Layout */
+.task-form-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-label {
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #374151;
+    font-size: 0.95em;
+}
+
+.required {
+    color: #dc2626;
+    font-weight: 700;
+}
+
+.form-control {
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95em;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-control:invalid {
+    border-color: #f87171;
+}
+
+.form-control:valid:not(:placeholder-shown) {
+    border-color: #10b981;
+}
+
+.form-control[readonly] {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+.form-control[readonly]:focus {
+    border-color: #e9ecef;
+    box-shadow: none;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+}
+
+/* Multi-select styling */
+select[multiple].form-control {
+    padding: 8px;
+}
+
+select[multiple].form-control option {
+    padding: 4px 8px;
+    margin: 1px 0;
+    border-radius: 4px;
+}
+
+select[multiple].form-control option:checked {
+    background: #667eea;
+    color: white;
+}
+
+/* Field help styling */
+.field-help {
+    font-size: 0.8em;
+    color: #6b7280;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* No Tasks Message */
+.no-tasks-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.no-tasks-icon {
+    font-size: 3em;
+    margin-bottom: 16px;
+}
+
+.no-tasks-message h4 {
+    margin: 0 0 8px 0;
+    color: #374151;
+}
+
+.no-tasks-message p {
+    margin: 0;
+    font-size: 0.9em;
+}
+
+/* Session Summary in Modal Header */
+.session-summary {
+    font-size: 0.9em;
+    color: #6b7280;
+    margin-top: 8px;
+}
+
+.session-summary span {
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Analysis Actions */
+.analysis-actions {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.analysis-actions .btn {
+    padding: 12px 24px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.analysis-actions .btn-primary {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.analysis-actions .btn-primary:hover {
+    background: #5a67d8;
+    border-color: #5a67d8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+}
+
+.analysis-actions .btn-secondary {
+    background: white;
+    color: #6b7280;
+    border-color: #d1d5db;
+}
+
+.analysis-actions .btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    color: #374151;
+}
+
+.analysis-actions .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.btn-icon {
+    font-size: 1.1em;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .study-analysis-content {
+        width: 95%;
+    }
+}
+
+@media (max-width: 768px) {
+    .task-analysis-form {
+        padding: 16px;
+    }
+    
+    .task-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .analysis-actions {
+        flex-direction: column;
+    }
+    
+    .analysis-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Loading State for Forms */
+.analysis-form-container.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.analysis-form-container.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 30px;
+    height: 30px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes spin {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* Session Configuration Modal */
+.session-config-content {
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+}
+
+.modal-subtitle {
+    color: #6b7280;
+    font-size: 0.9em;
+    margin-top: 5px;
+    margin-bottom: 0;
+}
+
+.session-config-content .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.session-config-content .form-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.session-config-content .btn {
+    padding: 12px 20px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 150px;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .session-config-content .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .session-config-content .form-actions {
+        flex-direction: column;
+    }
+}

@@ -1,0 +1,33 @@
+/**
+ * Task Item Size Consistency Fixes
+ * This CSS ensures all task-item elements are the same size regardless of correct/incorrect status
+ */
+
+/* Make all task items have the same height and dimensions */
+.task-item {
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+}
+
+/* Ensure that correct and incorrect items have the same size */
+.task-item.correct,
+.task-item.incorrect {
+    /* Keep the same size as regular task items */
+    min-height: 160px;
+}
+
+/* Ensure that content within task items aligns consistently */
+.task-main-info {
+    flex: 1;
+}
+
+/* Add specific CSS for the task items with the IDs you provided */
+.task-item[data-task-id="task-hwdp-1758129168905"],
+.task-item[data-task-id="task-33333-1758129168906"] {
+    min-height: 160px;
+    /* Optional: highlight these specific items for testing */
+    /* border: 2px solid var(--primary-blue); */
+}

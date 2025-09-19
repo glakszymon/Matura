@@ -113,6 +113,14 @@ class SimplifiedFormApp {
         // Initialize analytics manager if it exists
         if (typeof AnalyticsManager !== 'undefined') {
             this.analyticsManager = new AnalyticsManager(this.config, this.googleSheetsAPI);
+            // Expose globally for LeftNavigation to access
+            window.analyticsManager = this.analyticsManager;
+            try {
+                // Preload analytics data so subject pages render instantly on navigation
+                this.analyticsManager.loadAnalyticsData();
+            } catch (e) {
+                console.warn('Analytics preload failed:', e);
+            }
         }
     }
 
@@ -135,6 +143,18 @@ class SimplifiedFormApp {
         // Timer management
         this.sessionTimerInterval = null;
         this.taskTimerInterval = null;
+        this.sessionStartTime = null;
+        this.sessionPausedTime = 0;
+        this.isSessionPaused = false;
+        
+        // Simple caching for better performance
+        this.cache = {
+            subjects: null,
+            categories: new Map() // Key: subject, Value: categories
+        };
+        
+        // View mode state
+        this.isMobileMode = false;
         
         // Setup study session modal controls
         this.setupStudySessionModal();
@@ -153,9 +173,8 @@ class SimplifiedFormApp {
         // Start Study Session button
         if (startStudyBtn) {
             startStudyBtn.addEventListener('click', () => {
-                console.log('🏁 Starting study session...');
+                console.log('🏁 Starting study session configuration...');
                 this.startStudySession();
-                this.openStudySessionModal();
             });
         }
         
@@ -176,6 +195,7 @@ class SimplifiedFormApp {
             correctTaskBtn.addEventListener('click', () => {
                 console.log('✅ Correct task recorded');
                 this.recordStudyTask(true);
+                this.showDopamineFeedback(true, correctTaskBtn);
             });
         }
         
@@ -183,6 +203,16 @@ class SimplifiedFormApp {
             incorrectTaskBtn.addEventListener('click', () => {
                 console.log('❌ Incorrect task recorded');
                 this.recordStudyTask(false);
+                this.showDopamineFeedback(false, incorrectTaskBtn);
+            });
+        }
+        
+        // Exit Session button (new)
+        const exitSessionBtn = document.getElementById('exit-session-btn');
+        if (exitSessionBtn) {
+            exitSessionBtn.addEventListener('click', () => {
+                console.log('🚪 Exiting study session without saving...');
+                this.exitStudySessionWithoutSaving();
             });
         }
         
@@ -195,12 +225,11 @@ class SimplifiedFormApp {
             });
         }
         
-        // Pause Session button
+        // Pause/Resume Session button
         if (pauseSessionBtn) {
             pauseSessionBtn.addEventListener('click', () => {
-                console.log('⏸️ Pausing study session...');
-                // TODO: Implement pause functionality
-                alert('Funkcja pauzy - w przygotowaniu');
+                console.log('⏸️ Toggling pause state...');
+                this.togglePauseSession();
             });
         }
         
@@ -222,14 +251,77 @@ class SimplifiedFormApp {
             });
         }
         
-        // Close modal when clicking outside
-        if (studyModal) {
-            studyModal.addEventListener('click', (e) => {
-                if (e.target === studyModal) {
-                    this.closeStudySessionModal();
-                }
+        // Task form buttons
+        const saveTaskBtn = document.getElementById('save-task-btn');
+        const clearFormBtn = document.getElementById('clear-form-btn');
+        
+        if (saveTaskBtn) {
+            saveTaskBtn.addEventListener('click', () => {
+                console.log('💾 Manually saving current task...');
+                this.saveCurrentTask();
             });
         }
+        
+        if (clearFormBtn) {
+            clearFormBtn.addEventListener('click', () => {
+                console.log('🔄 Manually clearing form...');
+                this.manualClearForm();
+            });
+        }
+        
+        // View mode switcher
+        const mobileToggle = document.getElementById('mobile-mode-toggle');
+        const modeSlider = document.querySelector('.mode-slider');
+        
+        if (mobileToggle) {
+            console.log('⚙️ Mobile toggle found and event listener attached');
+            mobileToggle.addEventListener('change', () => {
+                console.log('🔄 Mobile toggle changed to:', mobileToggle.checked);
+                this.toggleViewMode(mobileToggle.checked);
+            });
+            
+            // Backup click handler on the slider itself
+            if (modeSlider) {
+                modeSlider.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    mobileToggle.checked = !mobileToggle.checked;
+                    console.log('🔄 Mode slider clicked, toggle set to:', mobileToggle.checked);
+                    this.toggleViewMode(mobileToggle.checked);
+                });
+                console.log('⚙️ Backup click handler added to mode slider');
+            }
+        } else {
+            console.warn('⚠️ Mobile toggle not found during setup');
+        }
+        
+        // Results modal buttons
+        const saveSessionResultsBtn = document.getElementById('save-session-results');
+        const editTasksDetailBtn = document.getElementById('edit-tasks-detail');
+        const closeResultsModalBtn = document.getElementById('close-results-modal');
+        
+        if (saveSessionResultsBtn) {
+            saveSessionResultsBtn.addEventListener('click', () => {
+                console.log('💾 Saving session results...');
+                this.saveSessionFromResults();
+            });
+        }
+        
+        if (editTasksDetailBtn) {
+            editTasksDetailBtn.addEventListener('click', () => {
+                console.log('✏️ Opening detailed task editing...');
+                this.openDetailedTaskEditing();
+            });
+        }
+        
+        if (closeResultsModalBtn) {
+            closeResultsModalBtn.addEventListener('click', () => {
+                console.log('❌ Closing results modal...');
+                this.hideStudyResultsModal();
+            });
+        }
+        
+        // Disable closing modal when clicking outside for fullscreen focus
+        // Removed click-outside-to-close functionality for better study focus
     }
     
     /**
@@ -238,14 +330,518 @@ class SimplifiedFormApp {
     openStudySessionModal() {
         const studyModal = document.getElementById('study-session-modal');
         if (studyModal) {
+            // Show modal immediately
             studyModal.style.display = 'flex';
-            console.log('✅ Study session modal opened');
+            document.body.style.overflow = 'hidden';
             
-            // Reset counters
-            this.resetStudyCounters();
+            // Only initialize session state if no active session exists
+            if (!this.isSessionActive || !this.currentSession) {
+                this.initializeSessionState();
+                
+                // Reset counters only for new sessions
+                requestAnimationFrame(() => {
+                    this.resetStudyCounters();
+                });
+            } else {
+                // For existing sessions, just update the UI counters to current values
+                requestAnimationFrame(() => {
+                    this.updateTaskCounters();
+                });
+            }
             
-            // StudyTrackingManager is disabled - SimplifiedFormApp handles sessions
-            console.log('📚 Session modal opened - using SimplifiedFormApp session management');
+            // Initialize view mode based on device
+            this.initializeViewMode();
+        }
+            
+        console.log('✅ Study session modal opened');
+    }
+    
+    /**
+     * Initialize session state when opening modal
+     */
+    initializeSessionState() {
+        console.log('🚀 Initializing session state...');
+        
+        // Set session as active
+        this.isSessionActive = true;
+        this.isSessionPaused = false;
+        
+        // Initialize session data
+        this.sessionStartTime = Date.now();
+        this.sessionPausedTime = 0;
+        this.sessionTasks = [];
+        
+        // Reset pause button to initial state
+        const pauseBtn = document.getElementById('pause-session-btn');
+        const pauseBtnIcon = document.getElementById('pause-btn-icon');
+        if (pauseBtnIcon) pauseBtnIcon.textContent = '⏸️';
+        if (pauseBtn) pauseBtn.title = 'Pause Session';
+        
+        console.log('✅ Session state initialized');
+    }
+    
+    /**
+     * Initialize view mode based on screen size and device
+     */
+    initializeViewMode() {
+        const isMobileDevice = this.detectMobileDevice();
+        const toggle = document.getElementById('mobile-mode-toggle');
+        
+        if (toggle) {
+            toggle.checked = isMobileDevice;
+            this.toggleViewMode(isMobileDevice);
+            
+            if (isMobileDevice) {
+                console.log('📱 Auto-detected mobile device, switching to mobile mode');
+            }
+        }
+    }
+    
+    /**
+     * Detect if user is on a mobile device
+     */
+    detectMobileDevice() {
+        // Check screen size
+        const isSmallScreen = window.innerWidth <= 768 || window.innerHeight <= 600;
+        
+        // Check user agent for mobile devices
+        const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Check for touch support
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        
+        return isSmallScreen || isMobileUserAgent || (isTouchDevice && window.innerWidth <= 1024);
+    }
+    
+    /**
+     * Toggle between mobile and desktop view modes
+     */
+    toggleViewMode(isMobile) {
+        this.isMobileMode = isMobile;
+        const studyModal = document.getElementById('study-session-modal');
+        const modalContent = studyModal?.querySelector('.study-session-content');
+        const modeLabel = document.getElementById('current-mode-label');
+        
+        console.log('🔄 toggleViewMode called with:', isMobile);
+        console.log('📱 Modal found:', !!studyModal);
+        console.log('📱 Modal content found:', !!modalContent);
+        
+        if (modalContent) {
+            if (isMobile) {
+                modalContent.classList.add('mobile-mode');
+                if (modeLabel) modeLabel.textContent = 'Mobile';
+                this.setupMobileEnhancements();
+                console.log('📱 Switched to mobile view mode - classes:', modalContent.classList.toString());
+            } else {
+                modalContent.classList.remove('mobile-mode');
+                if (modeLabel) modeLabel.textContent = 'Desktop';
+                this.removeMobileEnhancements();
+                console.log('💻 Switched to desktop view mode - classes:', modalContent.classList.toString());
+            }
+            
+            // Trigger a small animation to indicate the change
+            this.showModeChangeAnimation(isMobile);
+        } else {
+            console.warn('⚠️ Could not find modal content for view mode switch');
+        }
+    }
+    
+    /**
+     * Show visual feedback when mode changes
+     */
+    showModeChangeAnimation(isMobile) {
+        const studyModal = document.getElementById('study-session-modal');
+        const modalContent = studyModal?.querySelector('.study-session-content');
+        
+        if (modalContent) {
+            // Brief scale animation to indicate change
+            modalContent.style.transform = 'scale(0.98)';
+            modalContent.style.transition = 'transform 0.2s ease';
+            
+            requestAnimationFrame(() => {
+                modalContent.style.transform = 'scale(1)';
+                
+                setTimeout(() => {
+                    modalContent.style.transition = '';
+                }, 200);
+            });
+        }
+        
+        // Show brief toast message
+        const mode = isMobile ? 'Mobile' : 'Desktop';
+        this.showBriefToast(`🔄 Przełączono na widok ${mode}`);
+    }
+    
+    /**
+     * Show brief toast message
+     */
+    showBriefToast(message) {
+        // Create toast if it doesn't exist
+        let toast = document.getElementById('mode-change-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'mode-change-toast';
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #1e293b;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                font-weight: 500;
+                z-index: 10000;
+                opacity: 0;
+                transform: translateX(100px);
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                border: 1px solid #475569;
+            `;
+            document.body.appendChild(toast);
+        }
+        
+        toast.textContent = message;
+        
+        // Show toast
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(0)';
+        });
+        
+        // Hide toast after delay
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100px)';
+        }, 2000);
+    }
+    
+    /**
+     * Show success notification
+     */
+    showSuccessNotification(title, subtitle = '') {
+        this.showNotification(title, subtitle, 'success');
+    }
+    
+    /**
+     * Show error notification
+     */
+    showErrorNotification(title, subtitle = '') {
+        this.showNotification(title, subtitle, 'error');
+    }
+    
+    /**
+     * Show enhanced notification toast
+     */
+    showNotification(title, subtitle = '', type = 'info') {
+        // Create unique toast ID based on content and timestamp
+        const toastId = `notification-toast-${Date.now()}`;
+        
+        // Determine colors based on type
+        let colors = {
+            background: '#1e293b',
+            border: '#475569',
+            titleColor: 'white',
+            subtitleColor: '#d1d5db'
+        };
+        
+        if (type === 'success') {
+            colors = {
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                border: '#10b981',
+                titleColor: 'white',
+                subtitleColor: '#dcfce7'
+            };
+        } else if (type === 'error') {
+            colors = {
+                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                border: '#ef4444',
+                titleColor: 'white',
+                subtitleColor: '#fee2e2'
+            };
+        }
+        
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${colors.background};
+            color: ${colors.titleColor};
+            padding: 16px 20px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            z-index: 10001;
+            opacity: 0;
+            transform: translateX(100px) scale(0.95);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            border: 1px solid ${colors.border};
+            min-width: 300px;
+            max-width: 400px;
+            backdrop-filter: blur(8px);
+        `;
+        
+        // Build content
+        let content = `<div style="display: flex; align-items: flex-start; gap: 12px;">`;
+        
+        // Add icon based on type
+        if (type === 'success') {
+            content += `<div style="font-size: 1.5rem; margin-top: -2px;">✅</div>`;
+        } else if (type === 'error') {
+            content += `<div style="font-size: 1.5rem; margin-top: -2px;">⚠️</div>`;
+        } else {
+            content += `<div style="font-size: 1.5rem; margin-top: -2px;">ℹ️</div>`;
+        }
+        
+        content += `<div style="flex: 1;">`;
+        content += `<div style="font-weight: 700; margin-bottom: ${subtitle ? '4px' : '0'}; line-height: 1.3;">${title}</div>`;
+        
+        if (subtitle) {
+            content += `<div style="font-size: 0.8rem; color: ${colors.subtitleColor}; font-weight: 400; line-height: 1.4;">${subtitle}</div>`;
+        }
+        
+        content += `</div></div>`;
+        
+        toast.innerHTML = content;
+        document.body.appendChild(toast);
+        
+        // Show toast with animation
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(0) scale(1)';
+        });
+        
+        // Auto-hide after delay (longer for errors)
+        const hideDelay = type === 'error' ? 5000 : 3500;
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100px) scale(0.95)';
+            
+            // Remove from DOM after animation
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 400);
+        }, hideDelay);
+        
+        // Add click to dismiss
+        toast.addEventListener('click', () => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100px) scale(0.95)';
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 400);
+        });
+    }
+    
+    /**
+     * Setup mobile-specific enhancements
+     */
+    setupMobileEnhancements() {
+        const categorySelect = document.querySelector('#task-edit-form select[name="category"]');
+        if (categorySelect) {
+            // Enhance multi-select for mobile
+            this.enhanceMobileMultiSelect(categorySelect);
+        }
+        
+        // Add touch-friendly interactions
+        this.addMobileTouchEnhancements();
+        
+        // Auto-save form data more frequently in mobile mode
+        this.setupMobileAutoSave();
+        
+        console.log('📱 Mobile enhancements activated');
+    }
+    
+    /**
+     * Remove mobile-specific enhancements
+     */
+    removeMobileEnhancements() {
+        // Clean up mobile-specific event listeners and modifications
+        this.removeMobileTouchEnhancements();
+        this.removeMobileAutoSave();
+        
+        console.log('💻 Mobile enhancements removed');
+    }
+    
+    /**
+     * Enhance multi-select for mobile devices
+     */
+    enhanceMobileMultiSelect(selectElement) {
+        // Set up custom mobile category selector
+        this.setupMobileCategorySelector();
+    }
+    
+    /**
+     * Setup custom mobile-friendly category selector
+     */
+    setupMobileCategorySelector() {
+        const mobileCategorySelector = document.getElementById('mobile-category-selector');
+        const hiddenSelect = document.getElementById('category-select-hidden');
+        const countDisplay = document.getElementById('category-count');
+        
+        if (!mobileCategorySelector || !hiddenSelect) return;
+        
+        // Clear any existing categories
+        mobileCategorySelector.innerHTML = '';
+        
+        // Get categories from the hidden select element
+        const categories = Array.from(hiddenSelect.options).map(option => ({
+            value: option.value,
+            text: option.textContent,
+            selected: option.selected
+        }));
+        
+        // Create mobile category items
+        categories.forEach(category => {
+            const categoryItem = document.createElement('div');
+            categoryItem.className = 'category-item';
+            categoryItem.dataset.value = category.value;
+            
+            if (category.selected) {
+                categoryItem.classList.add('selected');
+            }
+            
+            categoryItem.innerHTML = `
+                <span class="category-name">${category.text}</span>
+            `;
+            
+            // Add click handler
+            categoryItem.addEventListener('click', () => {
+                this.toggleMobileCategory(categoryItem, hiddenSelect, countDisplay);
+            });
+            
+            mobileCategorySelector.appendChild(categoryItem);
+        });
+        
+        // Update count display
+        this.updateCategoryCount(hiddenSelect, countDisplay);
+    }
+    
+    /**
+     * Toggle mobile category selection
+     */
+    toggleMobileCategory(categoryItem, hiddenSelect, countDisplay) {
+        const categoryValue = categoryItem.dataset.value;
+        const isSelected = categoryItem.classList.contains('selected');
+        
+        // Toggle visual state
+        if (isSelected) {
+            categoryItem.classList.remove('selected');
+        } else {
+            categoryItem.classList.add('selected');
+        }
+        
+        // Update hidden select
+        const option = hiddenSelect.querySelector(`option[value="${categoryValue}"]`);
+        if (option) {
+            option.selected = !isSelected;
+        }
+        
+        // Update count
+        this.updateCategoryCount(hiddenSelect, countDisplay);
+        
+        // Add touch feedback
+        categoryItem.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            categoryItem.style.transform = 'scale(1)';
+        }, 100);
+    }
+    
+    /**
+     * Update category count display
+     */
+    updateCategoryCount(hiddenSelect, countDisplay) {
+        const selectedCount = hiddenSelect.selectedOptions.length;
+        
+        // Remove all classes first
+        countDisplay.classList.remove('has-selection', 'error');
+        
+        if (selectedCount === 0) {
+            countDisplay.textContent = 'Tap categories to select';
+            countDisplay.classList.add('error');
+        } else {
+            countDisplay.textContent = `✓ ${selectedCount} selected`;
+            countDisplay.classList.add('has-selection');
+        }
+    }
+    
+    /**
+     * Add mobile touch enhancements
+     */
+    addMobileTouchEnhancements() {
+        const buttons = document.querySelectorAll('.mobile-mode .btn');
+        buttons.forEach(button => {
+            button.addEventListener('touchstart', () => {
+                button.style.transform = 'scale(0.95)';
+                button.style.opacity = '0.8';
+            });
+            
+            button.addEventListener('touchend', () => {
+                setTimeout(() => {
+                    button.style.transform = 'scale(1)';
+                    button.style.opacity = '1';
+                }, 100);
+            });
+        });
+    }
+    
+    /**
+     * Remove mobile touch enhancements
+     */
+    removeMobileTouchEnhancements() {
+        // Reset any transform/opacity changes
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(button => {
+            button.style.transform = '';
+            button.style.opacity = '';
+        });
+    }
+    
+    /**
+     * Setup mobile auto-save (save form data when switching between fields)
+     */
+    setupMobileAutoSave() {
+        const formInputs = document.querySelectorAll('#task-edit-form input, #task-edit-form select, #task-edit-form textarea');
+        formInputs.forEach(input => {
+            input.addEventListener('blur', () => {
+                // Auto-save form state in mobile mode
+                this.saveMobileFormState();
+            });
+        });
+    }
+    
+    /**
+     * Remove mobile auto-save
+     */
+    removeMobileAutoSave() {
+        // Auto-save is removed when desktop mode is restored
+        // No explicit cleanup needed as event listeners are passive
+    }
+    
+    /**
+     * Save form state for mobile mode
+     */
+    saveMobileFormState() {
+        if (!this.isMobileMode) return;
+        
+        const form = document.getElementById('task-edit-form');
+        if (form) {
+            const formData = new FormData(form);
+            const data = {
+                taskName: formData.get('task_name') || '',
+                categories: Array.from(formData.getAll('category')),
+                description: formData.get('description') || ''
+            };
+            
+            // Store in session for mobile mode persistence
+            sessionStorage.setItem('mobile_form_state', JSON.stringify(data));
         }
     }
     
@@ -256,11 +852,492 @@ class SimplifiedFormApp {
         const studyModal = document.getElementById('study-session-modal');
         if (studyModal) {
             studyModal.style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
             console.log('✅ Study session modal closed');
             
-            // StudyTrackingManager is disabled - SimplifiedFormApp handles sessions
-            console.log('📚 Session modal closed - SimplifiedFormApp handles session management');
+            // Session cleanup disabled - keeping session data persistent
+            // this.cleanupSessionState();
+            console.log('🔒 Session data preserved (cleanup disabled)');
         }
+    }
+    
+    /**
+     * Exit study session without saving any data
+     */
+    exitStudySessionWithoutSaving() {
+        if (confirm('🚪 Czy na pewno chcesz wyjść bez zapisywania sesji nauki? Wszystkie postępy zostaną utracone.')) {
+            console.log('🚪 Exiting session without saving - user confirmed');
+            // Session cleanup disabled - keeping session data persistent
+            // this.cleanupSessionState();
+            console.log('🔒 Session data preserved (cleanup disabled)');
+            this.closeStudySessionModal();
+        }
+    }
+    
+    /**
+     * Clean up session state and timers
+     */
+    cleanupSessionState() {
+        console.log('🧹 Cleaning up session state...');
+        
+        // Clear all timers
+        if (this.sessionTimerInterval) {
+            clearInterval(this.sessionTimerInterval);
+            this.sessionTimerInterval = null;
+        }
+        
+        if (this.taskTimerInterval) {
+            clearInterval(this.taskTimerInterval);
+            this.taskTimerInterval = null;
+        }
+        
+        // Remove keyboard event listeners
+        if (this.pauseKeyboardHandler) {
+            document.removeEventListener('keydown', this.pauseKeyboardHandler);
+            this.pauseKeyboardHandler = null;
+        }
+        
+        // Reset session state
+        this.currentSession = null;
+        this.sessionTasks = [];
+        this.isSessionActive = false;
+        this.sessionStartTime = null;
+        this.sessionPausedTime = 0;
+        this.isSessionPaused = false;
+        
+        // Clear any existing animations or overlays
+        this.cleanupAnimations();
+        
+        console.log('✅ Session state cleaned up');
+    }
+    
+    /**
+     * Toggle pause/resume session
+     */
+    togglePauseSession() {
+        const pauseBtn = document.getElementById('pause-session-btn');
+        const pauseBtnIcon = document.getElementById('pause-btn-icon');
+        
+        if (!this.isSessionActive) {
+            console.log('⚠️ No active session to pause');
+            this.showBriefToast('⚠️ Brak aktywnej sesji do wstrzymania');
+            return;
+        }
+        
+        this.isSessionPaused = !this.isSessionPaused;
+        
+        if (this.isSessionPaused) {
+            // Pause session
+            console.log('⏸️ Session paused');
+            if (pauseBtnIcon) pauseBtnIcon.textContent = '▶️';
+            if (pauseBtn) pauseBtn.title = 'Resume Session';
+            
+            // Store pause start time
+            this.pauseStartTime = Date.now();
+            
+            // Pause timers
+            this.pauseTimers();
+            
+            // Show pause overlay
+            this.showPauseOverlay();
+            
+            // Show brief feedback
+            this.showBriefToast('⏸️ Sesja wstrzymana');
+            
+        } else {
+            // Resume session
+            console.log('▶️ Session resumed');
+            if (pauseBtnIcon) pauseBtnIcon.textContent = '⏸️';
+            if (pauseBtn) pauseBtn.title = 'Pause Session';
+            
+            // Add paused time to total
+            if (this.pauseStartTime) {
+                this.sessionPausedTime += Date.now() - this.pauseStartTime;
+                this.pauseStartTime = null;
+            }
+            
+            // Resume timers
+            this.resumeTimers();
+            
+            // Hide pause overlay
+            this.hidePauseOverlay();
+            
+            // Show brief feedback
+            this.showBriefToast('▶️ Sesja wznowiona - kontynuuj naukę!');
+            
+            // Add a small celebration effect
+            this.showResumeAnimation();
+        }
+    }
+    
+    /**
+     * Pause session timers
+     */
+    pauseTimers() {
+        // Implementation will depend on how timers are currently managed
+        console.log('⏸️ Timers paused');
+    }
+    
+    /**
+     * Resume session timers
+     */
+    resumeTimers() {
+        // Implementation will depend on how timers are currently managed
+        console.log('▶️ Timers resumed');
+    }
+    
+    /**
+     * Show pause overlay
+     */
+    showPauseOverlay() {
+        let overlay = document.getElementById('pause-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'pause-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10002;
+                backdrop-filter: blur(8px);
+                cursor: pointer;
+                user-select: none;
+            `;
+            
+            overlay.innerHTML = `
+                <div style="text-align: center; color: white; pointer-events: none;">
+                    <div style="font-size: 4rem; margin-bottom: 20px; animation: pausePulse 2s infinite ease-in-out;">⏸️</div>
+                    <h2 style="font-size: 2rem; margin-bottom: 15px; font-weight: 600;">Sesja Wstrzymana</h2>
+                    <p style="font-size: 1.2rem; opacity: 0.9; margin-bottom: 25px;">Kliknij gdziekolwiek aby wznowić</p>
+                    <div style="display: flex; gap: 15px; justify-content: center; align-items: center;">
+                        <button id="resume-btn" style="
+                            background: linear-gradient(135deg, #10b981, #059669);
+                            color: white;
+                            border: none;
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            font-size: 1.1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            transition: all 0.2s ease;
+                            pointer-events: auto;
+                            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                        " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            <span>▶️</span> Wznów Sesję
+                        </button>
+                        <button id="exit-from-pause-btn" style="
+                            background: rgba(255, 255, 255, 0.2);
+                            color: white;
+                            border: 1px solid rgba(255, 255, 255, 0.3);
+                            padding: 12px 24px;
+                            border-radius: 8px;
+                            font-size: 1.1rem;
+                            font-weight: 600;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            transition: all 0.2s ease;
+                            pointer-events: auto;
+                            backdrop-filter: blur(10px);
+                        " onmouseover="this.style.background='rgba(255, 255, 255, 0.3)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.2)'">
+                            <span>✕</span> Zakończ Sesję
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add click handler to overlay (anywhere to resume)
+            overlay.addEventListener('click', (e) => {
+                // Only resume if clicking the overlay itself, not the buttons
+                if (e.target === overlay) {
+                    this.togglePauseSession();
+                }
+            });
+            
+            document.body.appendChild(overlay);
+            
+            // Add event listeners to buttons
+            const resumeBtn = overlay.querySelector('#resume-btn');
+            const exitBtn = overlay.querySelector('#exit-from-pause-btn');
+            
+            if (resumeBtn) {
+                resumeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.togglePauseSession();
+                });
+            }
+            
+            if (exitBtn) {
+                exitBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.exitStudySessionWithoutSaving();
+                });
+            }
+        }
+        
+        // Add keyboard listener for spacebar to resume
+        this.pauseKeyboardHandler = (e) => {
+            if (e.code === 'Space' || e.code === 'Enter') {
+                e.preventDefault();
+                this.togglePauseSession();
+            } else if (e.code === 'Escape') {
+                e.preventDefault();
+                this.exitStudySessionWithoutSaving();
+            }
+        };
+        
+        document.addEventListener('keydown', this.pauseKeyboardHandler);
+        
+        console.log('⏸️ Pause overlay shown with interactive controls');
+    }
+    
+    /**
+     * Hide pause overlay
+     */
+    hidePauseOverlay() {
+        const overlay = document.getElementById('pause-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+        
+        // Remove keyboard event listener
+        if (this.pauseKeyboardHandler) {
+            document.removeEventListener('keydown', this.pauseKeyboardHandler);
+            this.pauseKeyboardHandler = null;
+        }
+        
+        console.log('▶️ Pause overlay hidden and keyboard handlers removed');
+    }
+    
+    /**
+     * Show resume animation for visual feedback
+     */
+    showResumeAnimation() {
+        // Create a brief resume flash animation
+        const flash = document.createElement('div');
+        flash.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 9997;
+            animation: resumeFlash 0.6s ease-out;
+        `;
+        
+        document.body.appendChild(flash);
+        
+        // Remove flash after animation
+        setTimeout(() => {
+            if (flash.parentNode) {
+                flash.parentNode.removeChild(flash);
+            }
+        }, 600);
+        
+        // Animate the pause button for extra feedback
+        const pauseBtn = document.getElementById('pause-session-btn');
+        if (pauseBtn) {
+            pauseBtn.style.animation = 'resumeBtnPulse 0.6s ease-out';
+            setTimeout(() => {
+                pauseBtn.style.animation = '';
+            }, 600);
+        }
+    }
+    
+    /**
+     * Show dopamine feedback animation
+     */
+    showDopamineFeedback(isCorrect, buttonElement) {
+        console.log(`🎉 Showing ${isCorrect ? 'success' : 'error'} feedback animation`);
+        
+        // Add screen flash effect
+        this.triggerScreenFlash(isCorrect);
+        
+        // Add button pulse effect
+        const pulseClass = isCorrect ? 'success-pulse' : 'error-pulse';
+        buttonElement.classList.add(pulseClass);
+        
+        // Remove pulse class after animation
+        setTimeout(() => {
+            buttonElement.classList.remove(pulseClass);
+        }, 800);
+        
+        // Show large feedback animation
+        this.showFeedbackOverlay(isCorrect);
+        
+        // Animate stat counter
+        this.animateStatCounter(isCorrect);
+        
+        // Add confetti and sound effects for correct answers
+        if (isCorrect) {
+            this.triggerEnhancedConfetti();
+            // Optional: Add success sound
+            this.playSuccessSound();
+        } else {
+            // Add error feedback sound
+            this.playErrorSound();
+        }
+    }
+    
+    /**
+     * Show feedback overlay animation
+     */
+    showFeedbackOverlay(isCorrect) {
+        const overlay = document.createElement('div');
+        overlay.className = 'task-feedback-overlay';
+        
+        const animation = document.createElement('div');
+        animation.className = `feedback-animation ${isCorrect ? 'correct' : 'incorrect'}`;
+        animation.textContent = isCorrect ? '✓' : '×';
+        
+        overlay.appendChild(animation);
+        document.body.appendChild(overlay);
+        
+        // Remove overlay after animation completes
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.parentNode.removeChild(overlay);
+            }
+        }, 800);
+    }
+    
+    /**
+     * Animate stat counter when task is recorded
+     */
+    animateStatCounter(isCorrect) {
+        const counterSelector = isCorrect ? '.counter-item.correct' : '.counter-item.incorrect';
+        const counter = document.querySelector(counterSelector);
+        
+        if (counter) {
+            counter.classList.add('celebrate');
+            setTimeout(() => {
+                counter.classList.remove('celebrate');
+            }, 800);
+        }
+        
+        // Also animate the total counter
+        const totalCounter = document.querySelector('.counter-item:not(.correct):not(.incorrect)');
+        if (totalCounter) {
+            totalCounter.classList.add('celebrate');
+            setTimeout(() => {
+                totalCounter.classList.remove('celebrate');
+            }, 800);
+        }
+    }
+    
+    /**
+     * Trigger enhanced confetti animation for correct answers
+     */
+    triggerEnhancedConfetti() {
+        const colors = ['#10b981', '#667eea', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#f97316'];
+        const confettiCount = 80; // More confetti pieces
+        
+        // Create multiple bursts for more dramatic effect
+        for (let burst = 0; burst < 3; burst++) {
+            setTimeout(() => {
+                for (let i = 0; i < confettiCount / 3; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        
+                        // More varied positioning
+                        confetti.style.left = (Math.random() * 120 - 10) + 'vw'; // Can go slightly off-screen
+                        confetti.style.top = (Math.random() * 20 - 10) + 'vh'; // Start from different heights
+                        
+                        const colorIndex = Math.floor(Math.random() * colors.length);
+                        confetti.style.backgroundColor = colors[colorIndex];
+                        confetti.style.animationDelay = Math.random() * 1 + 's';
+                        
+                        // Add rotation animation
+                        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                        
+                        document.body.appendChild(confetti);
+                        
+                        // Remove confetti after animation
+                        setTimeout(() => {
+                            if (confetti.parentNode) {
+                                confetti.parentNode.removeChild(confetti);
+                            }
+                        }, 4500);
+                    }, Math.random() * 200);
+                }
+            }, burst * 150); // Stagger the bursts
+        }
+    }
+    
+    /**
+     * Trigger screen flash effect
+     */
+    triggerScreenFlash(isCorrect) {
+        const flash = document.createElement('div');
+        flash.className = `screen-flash ${isCorrect ? 'success' : 'error'}`;
+        
+        document.body.appendChild(flash);
+        
+        // Remove flash after animation
+        setTimeout(() => {
+            if (flash.parentNode) {
+                flash.parentNode.removeChild(flash);
+            }
+        }, 500);
+    }
+    
+    /**
+     * Play success sound (visual feedback only for now)
+     */
+    playSuccessSound() {
+        // For now, just add visual indication
+        // In the future, could add actual audio feedback
+        console.log('🎵 Success sound effect (visual feedback)');
+    }
+    
+    /**
+     * Play error sound (visual feedback only for now)
+     */
+    playErrorSound() {
+        // For now, just add visual indication
+        // In the future, could add actual audio feedback
+        console.log('🔊 Error sound effect (visual feedback)');
+    }
+    
+    /**
+     * Clean up all animations and overlays
+     */
+    cleanupAnimations() {
+        // Remove any existing feedback overlays
+        const feedbackOverlays = document.querySelectorAll('.task-feedback-overlay');
+        feedbackOverlays.forEach(overlay => overlay.remove());
+        
+        // Remove pause overlay
+        const pauseOverlay = document.getElementById('pause-overlay');
+        if (pauseOverlay) pauseOverlay.remove();
+        
+        // Remove screen flash effects
+        const screenFlashes = document.querySelectorAll('.screen-flash');
+        screenFlashes.forEach(flash => flash.remove());
+        
+        // Remove confetti
+        const confetti = document.querySelectorAll('.confetti');
+        confetti.forEach(piece => piece.remove());
+        
+        // Remove animation classes
+        document.querySelectorAll('.success-pulse, .error-pulse, .celebrate').forEach(el => {
+            el.classList.remove('success-pulse', 'error-pulse', 'celebrate');
+        });
+        
+        console.log('🧹 Enhanced animations cleaned up');
     }
     
     /**
@@ -309,11 +1386,12 @@ class SimplifiedFormApp {
             this.createSessionConfigModal();
         }
         
-        // Populate dropdowns
-        await this.populateSessionConfigDropdowns();
-        
-        // Show modal
+        // Show modal immediately for better UX
         document.getElementById('session-config-modal').style.display = 'flex';
+        
+        // Populate dropdowns asynchronously without blocking UI
+        this.populateSessionConfigDropdowns();
+        
         console.log('🔧 Session configuration modal shown');
     }
     
@@ -379,28 +1457,46 @@ class SimplifiedFormApp {
      * Populate dropdowns in session config modal
      */
     async populateSessionConfigDropdowns() {
+        const subjectSelect = document.querySelector('#session-config-modal select[name="session_subject"]');
+        if (!subjectSelect) return;
+        
+        // Show loading state immediately
+        subjectSelect.innerHTML = '<option value="">Ładowanie przedmiotów...</option>';
+        subjectSelect.disabled = true;
+        
         try {
-            const subjectsResponse = await this.googleSheetsAPI.fetchSubjects();
-            if (subjectsResponse.success) {
-                const subjectSelect = document.querySelector('#session-config-modal select[name="session_subject"]');
-                if (subjectSelect) {
-                    const subjects = subjectsResponse.subjects || [];
-                    subjectSelect.innerHTML = '<option value="">Wybierz przedmiot...</option>';
-                    subjects.forEach(subject => {
-                        const name = subject.subject_name || subject.name || subject;
-                        subjectSelect.innerHTML += `<option value="${name}">${name}</option>`;
-                    });
+            // Check cache first
+            let subjects = this.cache.subjects;
+            if (!subjects) {
+                const subjectsResponse = await this.googleSheetsAPI.fetchSubjects();
+                if (subjectsResponse.success) {
+                    subjects = subjectsResponse.subjects || [];
+                    this.cache.subjects = subjects; // Cache the results
                 }
+            }
+            
+            if (subjects) {
+                // Build options string in one go for better performance
+                let optionsHTML = '<option value="">Wybierz przedmiot...</option>';
+                subjects.forEach(subject => {
+                    const name = subject.subject_name || subject.name || subject;
+                    optionsHTML += `<option value="${name}">${name}</option>`;
+                });
+                
+                subjectSelect.innerHTML = optionsHTML;
+                subjectSelect.disabled = false;
             }
         } catch (error) {
             console.warn('Could not load subjects for session config:', error);
+            subjectSelect.innerHTML = '<option value="">Błąd ładowania - spróbuj ponownie</option>';
+            subjectSelect.disabled = false;
         }
     }
     
     /**
      * Confirm and start the session with configured settings
      */
-    confirmSessionStart() {
+    async confirmSessionStart() {
         const form = document.getElementById('session-config-form');
         const formData = new FormData(form);
         
@@ -439,6 +1535,10 @@ class SimplifiedFormApp {
         // Hide config modal
         document.getElementById('session-config-modal').style.display = 'none';
         
+        // Open session modal immediately, then initialize form asynchronously
+        this.openStudySessionModal();
+        this.initializeTaskForm(); // Non-blocking
+        
         console.log('🎯 Study session started with config:', {
             id: this.currentSession.sessionId,
             subject: sessionSubject,
@@ -457,47 +1557,185 @@ class SimplifiedFormApp {
     }
     
     /**
-     * Record a task during the session - stores basic info for analysis modal
+     * Record a task during the session - saves with current form data
      */
     recordStudyTask(isCorrect) {
-        // StudyTrackingManager is disabled - no duplicate prevention needed
-        
         if (!this.isSessionActive || !this.currentSession) {
-            // If no session active, start one
             this.startStudySession();
+            return;
+        }
+        
+        // Immediate visual feedback
+        this.showTaskRecordingFeedback(isCorrect);
+        
+        // Store the correctness for when the task is saved
+        this.pendingTaskCorrectness = isCorrect;
+        
+        // Save the task with current form data
+        this.saveCurrentTask();
+        
+        console.log('📝 Task correctness recorded:', isCorrect, 'saving with form data');
+    }
+    
+    /**
+     * Show immediate visual feedback for task recording
+     */
+    showTaskRecordingFeedback(isCorrect) {
+        const button = isCorrect ? 
+            document.getElementById('correct-task-btn') : 
+            document.getElementById('incorrect-task-btn');
+            
+        if (button) {
+            // Add immediate visual feedback
+            button.style.transform = 'scale(0.95)';
+            button.style.opacity = '0.8';
+            
+            requestAnimationFrame(() => {
+                button.style.transform = 'scale(1)';
+                button.style.opacity = '1';
+            });
+        }
+    }
+    
+    /**
+     * Initialize the task form when session starts
+     */
+    async initializeTaskForm() {
+        const taskEditSection = document.getElementById('task-edit-section');
+        const taskEditForm = document.getElementById('task-edit-form');
+        
+        if (!taskEditSection || !taskEditForm) {
+            console.error('Task editing elements not found');
+            return;
+        }
+        
+        // Form is always visible during session
+        taskEditSection.style.display = 'block';
+        
+        // Load and populate categories for the session subject
+        await this.populateTaskCategories();
+        
+        // Clear form to start fresh
+        taskEditForm.reset();
+        
+        console.log('📋 Task form initialized for session');
+    }
+    
+    /**
+     * Populate categories dropdown for task editing
+     */
+    async populateTaskCategories() {
+        const categorySelect = document.querySelector('#task-edit-form select[name="category"]');
+        const hiddenCategorySelect = document.getElementById('category-select-hidden');
+        const targetSelect = hiddenCategorySelect || categorySelect;
+        
+        if (!targetSelect || !this.currentSession?.subject) {
+            return;
+        }
+        
+        // Show loading state immediately
+        if (categorySelect) {
+            categorySelect.innerHTML = '<option value="" disabled>Loading categories...</option>';
+            categorySelect.disabled = true;
+        }
+        if (hiddenCategorySelect) {
+            hiddenCategorySelect.innerHTML = '<option value="" disabled>Loading categories...</option>';
+            hiddenCategorySelect.disabled = true;
+        }
+        
+        try {
+            const subject = this.currentSession.subject;
+            // Check cache first
+            let categories = this.cache.categories.get(subject);
+            if (!categories) {
+                const categoriesResponse = await this.googleSheetsAPI.fetchCategories(subject);
+                if (categoriesResponse.success) {
+                    categories = categoriesResponse.categories || [];
+                    this.cache.categories.set(subject, categories); // Cache the results
+                }
+            }
+            
+            if (categories) {
+                // Build options string in one go for better performance
+                let optionsHTML = '';
+                categories.forEach(category => {
+                    const name = category.category_name || category.name || category;
+                    optionsHTML += `<option value="${name}">${name}</option>`;
+                });
+                
+                // Update both selects
+                if (categorySelect) {
+                    categorySelect.innerHTML = optionsHTML;
+                    categorySelect.disabled = false;
+                }
+                if (hiddenCategorySelect) {
+                    hiddenCategorySelect.innerHTML = optionsHTML;
+                    hiddenCategorySelect.disabled = false;
+                }
+                
+                // Set up mobile category selector if in mobile mode
+                if (this.isMobileMode) {
+                    this.setupMobileCategorySelector();
+                }
+            }
+        } catch (error) {
+            console.warn('Could not load categories for task editing:', error);
+            const errorMessage = '<option value="" disabled>Error loading categories</option>';
+            if (categorySelect) {
+                categorySelect.innerHTML = errorMessage;
+                setTimeout(() => categorySelect.disabled = false, 1000);
+            }
+            if (hiddenCategorySelect) {
+                hiddenCategorySelect.innerHTML = errorMessage;
+                setTimeout(() => hiddenCategorySelect.disabled = false, 1000);
+            }
+        }
+    }
+    
+    /**
+     * Save the current task with details from the form
+     */
+    saveCurrentTask() {
+        const taskEditForm = document.getElementById('task-edit-form');
+        const formData = new FormData(taskEditForm);
+        
+        const taskName = formData.get('task_name');
+        const description = formData.get('description') || ''; // Optional field
+        
+        // Get multiple selected categories
+        const categorySelect = taskEditForm.querySelector('select[name="category"]');
+        const selectedCategories = Array.from(categorySelect.selectedOptions).map(option => option.value);
+        const category = selectedCategories.join(', '); // Join multiple categories with comma
+        
+        // Validate required fields only
+        if (!taskName || selectedCategories.length === 0) {
+            alert('⚠️ Uzupełnij nazwę zadania i wybierz przynajmniej jedną kategorię!');
+            return;
         }
         
         const taskOrder = this.sessionTasks.length + 1;
         
-        // Get current form data (if available) to pre-populate analysis forms
-        const form = document.getElementById('google-sheets-form');
-        const taskData = form ? this.getFormData(form) : {};
-        
-        // Store basic task info - uses session-wide settings
+        // Create complete task object
         const task = {
-            task_id: this.generateTaskId(), // Generate unique task ID
-            task_name: taskData.task_name || '', // Pre-fill from form if available
-            description: taskData.description || '', // Pre-fill from form if available
-            category: taskData.category || '', // Pre-fill from form if available
-            subject: this.currentSession.subject, // From session config
-            correctness: isCorrect, // Store as boolean, will be converted to Yes/No in GoogleSheetsAPI
+            task_id: this.generateTaskId(),
+            task_name: taskName,
+            description: description,
+            category: category,
+            subject: this.currentSession.subject,
+            correctness: this.pendingTaskCorrectness,
             timestamp: new Date().toISOString(),
-            session_id: this.currentSession.sessionId, // From session
-            task_order: taskOrder, // Task sequence in session
-            location: this.currentSession.location // From session config
+            session_id: this.currentSession.sessionId,
+            task_order: taskOrder,
+            location: this.currentSession.location
         };
         
-        console.log(`📝 Creating task ${taskOrder} with data:`, task);
-        console.log(`  - Correctness stored as:`, task.correctness, '(type:', typeof task.correctness, ')');
+        console.log(`📝 Saving complete task ${taskOrder}:`, task);
         
         this.sessionTasks.push(task);
         
-        console.log(`💾 Session tasks now contains:`, this.sessionTasks.length, 'tasks');
-        console.log(`  - Latest task:`, this.sessionTasks[this.sessionTasks.length - 1]);
-        
         // Update session counters
         this.currentSession.totalTasks++;
-        if (isCorrect) {
+        if (this.pendingTaskCorrectness) {
             this.currentSession.correctTasks++;
         } else {
             this.currentSession.incorrectTasks++;
@@ -510,9 +1748,40 @@ class SimplifiedFormApp {
         // Update UI counters
         this.updateTaskCounters();
         
-        console.log('📝 Task recorded for session:', `Task ${taskOrder} (${isCorrect ? 'Correct' : 'Incorrect'})`);
+        // Clear form for next task
+        this.clearTaskForm();
+        
+        console.log('✅ Task saved successfully:', task.task_name);
         
         return task;
+    }
+    
+    /**
+     * Clear the task form for next task
+     */
+    clearTaskForm() {
+        const taskEditForm = document.getElementById('task-edit-form');
+        if (taskEditForm) {
+            taskEditForm.reset();
+            
+            // Focus on first field for next task
+            const firstInput = taskEditForm.querySelector('input[name="task_name"]');
+            if (firstInput) {
+                // Use requestAnimationFrame for smoother focus
+                requestAnimationFrame(() => firstInput.focus());
+            }
+        }
+        
+        this.pendingTaskCorrectness = null;
+        console.log('🔄 Task form cleared for next task');
+    }
+    
+    /**
+     * Manual clear form button handler
+     */
+    manualClearForm() {
+        this.clearTaskForm();
+        console.log('🔄 Task form manually cleared');
     }
     
     /**
@@ -531,7 +1800,7 @@ class SimplifiedFormApp {
     }
     
     /**
-     * End session and show analysis modal
+     * End session and show results modal
      */
     finishStudySession() {
         if (!this.isSessionActive || !this.currentSession) {
@@ -551,13 +1820,159 @@ class SimplifiedFormApp {
         
         console.log('🏁 Session finished:', this.currentSession.sessionId);
         
-        // Populate analysis modal with forms for each task
-        this.populateAnalysisModal();
-        
-        // Show analysis modal
-        this.showAnalysisModal();
+        // Show simplified results modal
+        this.showStudyResultsModal();
         
         return this.currentSession;
+    }
+    
+    /**
+     * Show study results modal with session summary
+     */
+    showStudyResultsModal() {
+        const resultsModal = document.getElementById('study-results-modal');
+        if (!resultsModal) {
+            console.error('Results modal not found');
+            return;
+        }
+        
+        // Show modal immediately for better UX
+        resultsModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        
+        // Update content asynchronously using requestAnimationFrame for smoother rendering
+        requestAnimationFrame(() => {
+            this.updateResultsDisplay();
+        });
+        
+        console.log('📊 Showing session results modal');
+    }
+    
+    /**
+     * Update results display content
+     */
+    updateResultsDisplay() {
+        // Update timer display
+        const finalSessionTime = document.getElementById('final-session-time');
+        if (finalSessionTime && this.currentSession) {
+            const minutes = this.currentSession.durationMinutes;
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            
+            if (hours > 0) {
+                finalSessionTime.textContent = `${hours}h ${remainingMinutes}m`;
+            } else {
+                finalSessionTime.textContent = `${remainingMinutes}m`;
+            }
+        }
+        
+        // Update counters
+        this.updateResultsCounters();
+    }
+    
+    /**
+     * Update counters in results modal
+     */
+    updateResultsCounters() {
+        if (!this.currentSession) return;
+        
+        const finalTotalTasks = document.getElementById('final-total-tasks');
+        const finalCorrectTasks = document.getElementById('final-correct-tasks');
+        const finalIncorrectTasks = document.getElementById('final-incorrect-tasks');
+        const finalAccuracy = document.getElementById('final-accuracy');
+        
+        if (finalTotalTasks) finalTotalTasks.textContent = this.currentSession.totalTasks || 0;
+        if (finalCorrectTasks) finalCorrectTasks.textContent = this.currentSession.correctTasks || 0;
+        if (finalIncorrectTasks) finalIncorrectTasks.textContent = this.currentSession.incorrectTasks || 0;
+        if (finalAccuracy) finalAccuracy.textContent = `${this.currentSession.accuracyPercentage || 0}%`;
+    }
+    
+    /**
+     * Hide study results modal
+     */
+    hideStudyResultsModal() {
+        const resultsModal = document.getElementById('study-results-modal');
+        if (resultsModal) {
+            resultsModal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    }
+    
+    /**
+     * Save session directly from results modal
+     */
+    async saveSessionFromResults() {
+        if (!this.currentSession || !this.sessionTasks.length) {
+            console.warn('No session data to save');
+            return;
+        }
+        
+        // Get additional notes from results modal
+        const sessionNotesAdjustment = document.getElementById('session-notes-adjustment');
+        if (sessionNotesAdjustment && sessionNotesAdjustment.value.trim()) {
+            this.currentSession.notes = `${this.currentSession.notes || ''}\n${sessionNotesAdjustment.value.trim()}`;
+        }
+        
+        try {
+            console.log('💾 Saving complete session with', this.sessionTasks.length, 'tasks');
+            
+            // Show enhanced loading with specific message
+            this.setLoadingState(true, 'Zapisywanie sesji do Google Sheets...');
+            
+            // Save session and tasks to Google Sheets
+            const result = await this.saveCompleteSession();
+            
+            if (result && result.success) {
+                // Show success notification
+                this.showSuccessNotification('✅ Sesja zapisana pomyślnie!', `ID: ${result.sessionId || 'N/A'} | Zadań: ${result.tasksCount || this.sessionTasks.length}`);
+                
+                // Session reset disabled - keeping session data persistent
+                // this.resetSessionState();
+                console.log('🔒 Session data preserved after save (reset disabled)');
+                
+                // Hide results modal
+                this.hideStudyResultsModal();
+                
+                console.log('✅ Session saved successfully');
+            } else {
+                throw new Error('Failed to save session');
+            }
+        } catch (error) {
+            console.error('❌ Error saving session:', error);
+            this.showErrorNotification('⚠️ Błąd zapisywania sesji', 'Spróbuj ponownie lub skontaktuj się z administratorem');
+        } finally {
+            // Always hide loading state
+            this.setLoadingState(false);
+        }
+    }
+    
+    /**
+     * Open detailed task editing (shows the original analysis modal)
+     */
+    openDetailedTaskEditing() {
+        // Hide results modal
+        this.hideStudyResultsModal();
+        
+        // Show the original analysis modal for detailed editing
+        this.populateAnalysisModal();
+        this.showAnalysisModal();
+        
+        console.log('✏️ Opened detailed task editing modal');
+    }
+    
+    /**
+     * Reset session state after saving
+     */
+    resetSessionState() {
+        this.currentSession = null;
+        this.sessionTasks = [];
+        this.isSessionActive = false;
+        this.pendingTaskCorrectness = null;
+        
+        // Reset UI elements
+        this.resetStudyCounters();
+        
+        console.log('🔄 Session state reset');
     }
     
     /**
@@ -566,10 +1981,15 @@ class SimplifiedFormApp {
     showAnalysisModal() {
         const modal = document.getElementById('study-analysis-modal');
         if (modal) {
-            // Update session summary
-            this.updateSessionSummary();
-            
+            // Show modal immediately
             modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            // Update content asynchronously
+            requestAnimationFrame(() => {
+                this.updateSessionSummary();
+            });
+            
             console.log('📋 Analysis modal shown');
         }
     }
@@ -865,18 +2285,23 @@ class SimplifiedFormApp {
             return;
         }
         
+        if (!this.sessionTasks || this.sessionTasks.length === 0) {
+            console.error('No tasks to save in session');
+            alert('⚠️ Brak zadań do zapisania w sesji');
+            return;
+        }
+        
         try {
             // Show loading state
-            this.setLoadingState(true, 'Zbieranie danych z formularzy...');
+            this.setLoadingState(true, 'Przygotowywanie danych...');
             
-            // Collect form data from analysis modal
-            const tasksWithFormData = this.collectTaskFormData();
+            // Use tasks that are already stored in sessionTasks (from recordStudyTask/saveCurrentTask)
+            const tasksForSaving = this.prepareTasksForSaving();
             
-            // Validate that all required fields are filled
-            const validationResult = this.validateTaskForms(tasksWithFormData);
-            if (!validationResult.isValid) {
+            // Quick validation
+            if (tasksForSaving.length === 0) {
                 this.setLoadingState(false);
-                alert('⚠️ Uzupełnij wszystkie wymagane pola:\n' + validationResult.errors.join('\n'));
+                alert('⚠️ Brak zadań do zapisania');
                 return;
             }
             
@@ -894,7 +2319,7 @@ class SimplifiedFormApp {
                     accuracy_percentage: this.currentSession.accuracyPercentage,
                     notes: this.currentSession.notes || 'Study session completed'
                 },
-                tasks: tasksWithFormData // Use tasks with completed form data
+                tasks: tasksForSaving // Use prepared tasks data
             };
             
             console.log('📤 Sending session data to Google Sheets:', sessionData);
@@ -904,20 +2329,63 @@ class SimplifiedFormApp {
             
             if (response.success) {
                 console.log('✅ Session saved successfully:', response);
-                alert(`✅ Sesja zapisana pomyślnie!\nID sesji: ${response.sessionId}\nZadań: ${response.tasksCount}`);
+                this.showSuccessNotification('✅ Sesja zapisana pomyślnie!', `ID: ${response.sessionId} | Zadań: ${response.tasksCount}`);
                 this.resetSession();
                 this.hideAnalysisModal();
+                return response;
             } else {
                 console.error('❌ Failed to save session:', response.error);
-                alert('❌ Błąd podczas zapisywania sesji: ' + (response.error || 'Nieznany błąd'));
+                this.showErrorNotification('❌ Błąd zapisywania sesji', response.error || 'Nieznany błąd');
+                return response;
             }
             
         } catch (error) {
             console.error('❌ Error saving session:', error);
-            alert('❌ Błąd podczas zapisywania sesji: ' + error.message);
+            this.showErrorNotification('❌ Błąd zapisywania sesji', error.message);
+            return { success: false, error: error.message };
         } finally {
             this.setLoadingState(false);
         }
+    }
+    
+    /**
+     * Prepare tasks for saving - converts sessionTasks to the format expected by Google Sheets
+     */
+    prepareTasksForSaving() {
+        if (!this.sessionTasks || this.sessionTasks.length === 0) {
+            console.warn('No tasks to prepare for saving');
+            return [];
+        }
+        
+        console.log('📦 Preparing', this.sessionTasks.length, 'tasks for saving...');
+        
+        const preparedTasks = this.sessionTasks.map((task, index) => {
+            console.log(`📝 Preparing task ${index + 1}:`, task);
+            
+            // Convert correctness to Yes/No format for Google Sheets
+            const correctnessString = this.convertCorrectnessToString(task.correctness);
+            console.log(`  - Correctness: ${task.correctness} → ${correctnessString}`);
+            
+            // Create task object with field names matching backend expectations
+            const preparedTask = {
+                task_id: task.task_id || this.generateTaskId(),
+                task_name: task.task_name || '',
+                description: task.description || '',
+                categories: task.category || '', // Backend expects 'categories' (plural) but our form uses 'category' (singular)
+                correctly_completed: correctnessString, // Backend expects 'correctly_completed' 
+                start_time: task.timestamp || new Date().toISOString(),
+                end_time: task.timestamp || new Date().toISOString(),
+                location: task.location || this.currentSession?.location || '',
+                subject: task.subject || this.currentSession?.subject || '',
+                session_id: task.session_id || this.currentSession?.sessionId || ''
+            };
+            
+            console.log(`  - Prepared task:`, preparedTask);
+            return preparedTask;
+        });
+        
+        console.log('✅ All tasks prepared for saving:', preparedTasks);
+        return preparedTasks;
     }
     
     /**
@@ -1251,22 +2719,156 @@ class SimplifiedFormApp {
      */
     setLoadingState(loading, message = 'Przetwarzanie...') {
         const submitButton = document.getElementById('submit-analysis-btn');
+        const saveResultsButton = document.getElementById('save-session-results');
         const loadingOverlay = document.getElementById('loading-overlay');
         const loadingText = document.getElementById('loading-text');
 
+        // Update analysis modal submit button
         if (submitButton) {
             submitButton.disabled = loading;
             submitButton.innerHTML = loading ? 
-                '<span class="btn-icon">⏳</span> Zapisywanie...' : 
+                '<span class="btn-icon spinning">⏳</span> Zapisywanie...' : 
                 '<span class="btn-icon">💾</span> Zapisz Wszystkie Dane';
         }
+        
+        // Update results modal save button
+        if (saveResultsButton) {
+            saveResultsButton.disabled = loading;
+            saveResultsButton.innerHTML = loading ? 
+                '<span class="btn-icon spinning">🔄</span> Zapisywanie...' : 
+                '<span class="btn-icon">💾</span> Zapisz Sesję';
+        }
 
+        // Show/hide loading overlay with animation
         if (loadingOverlay) {
-            loadingOverlay.style.display = loading ? 'flex' : 'none';
+            if (loading) {
+                loadingOverlay.style.display = 'flex';
+                loadingOverlay.classList.add('fade-in');
+                // Add pulsing animation to the spinner
+                const spinner = loadingOverlay.querySelector('.loading-spinner');
+                if (spinner) {
+                    spinner.classList.add('pulse-animation');
+                }
+            } else {
+                loadingOverlay.classList.remove('fade-in');
+                loadingOverlay.classList.add('fade-out');
+                const spinner = loadingOverlay.querySelector('.loading-spinner');
+                if (spinner) {
+                    spinner.classList.remove('pulse-animation');
+                }
+                // Hide after animation completes
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                    loadingOverlay.classList.remove('fade-out');
+                }, 300);
+            }
         }
         
+        // Update loading text with typing animation
         if (loadingText && loading) {
-            loadingText.textContent = message;
+            this.animateLoadingText(loadingText, message);
+        }
+        
+        console.log(loading ? `🔄 Loading started: ${message}` : '✅ Loading completed');
+    }
+    
+    /**
+     * Animate loading text with typing effect
+     */
+    animateLoadingText(element, text) {
+        // Clear any existing intervals
+        if (element.typingInterval) {
+            clearInterval(element.typingInterval);
+        }
+        if (element.dotsInterval) {
+            clearInterval(element.dotsInterval);
+        }
+        
+        element.textContent = '';
+        let i = 0;
+        const typingInterval = setInterval(() => {
+            if (i < text.length) {
+                element.textContent += text.charAt(i);
+                i++;
+            } else {
+                clearInterval(typingInterval);
+                element.typingInterval = null;
+                // Add dots animation after text is complete
+                this.animateLoadingDots(element, text);
+            }
+        }, 50);
+        
+        // Store interval for cleanup
+        element.typingInterval = typingInterval;
+    }
+    
+    /**
+     * Animate loading dots after text
+     */
+    animateLoadingDots(element, baseText) {
+        let dotCount = 0;
+        const dotsInterval = setInterval(() => {
+            const dots = '.'.repeat((dotCount % 3) + 1);
+            element.textContent = baseText + dots;
+            dotCount++;
+            
+            // Stop dots animation when loading is complete (element gets hidden)
+            if (element.parentElement && element.parentElement.style.display === 'none') {
+                clearInterval(dotsInterval);
+            }
+        }, 500);
+        
+        // Store interval ID for cleanup
+        element.dotsInterval = dotsInterval;
+    }
+    
+    /**
+     * Show enhanced loading overlay for specific operations
+     */
+    showEnhancedLoading(title = 'Przetwarzanie', message = 'Proszę czekać...') {
+        // Create enhanced loading overlay if it doesn't exist
+        let overlay = document.getElementById('enhanced-loading-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'enhanced-loading-overlay';
+            overlay.className = 'enhanced-loading-overlay';
+            overlay.innerHTML = `
+                <div class="enhanced-loading-content">
+                    <div class="enhanced-loading-spinner">
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                        <div class="spinner-ring"></div>
+                    </div>
+                    <h3 class="enhanced-loading-title">${title}</h3>
+                    <p class="enhanced-loading-message">${message}</p>
+                    <div class="loading-progress-bar">
+                        <div class="loading-progress-fill"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        } else {
+            // Update existing overlay
+            overlay.querySelector('.enhanced-loading-title').textContent = title;
+            overlay.querySelector('.enhanced-loading-message').textContent = message;
+        }
+        
+        overlay.style.display = 'flex';
+        overlay.classList.add('fade-in');
+    }
+    
+    /**
+     * Hide enhanced loading overlay
+     */
+    hideEnhancedLoading() {
+        const overlay = document.getElementById('enhanced-loading-overlay');
+        if (overlay) {
+            overlay.classList.remove('fade-in');
+            overlay.classList.add('fade-out');
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                overlay.classList.remove('fade-out');
+            }, 300);
         }
     }
     

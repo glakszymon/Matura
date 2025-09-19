@@ -6,42 +6,98 @@
     <title>System Zarządzania Danymi</title>
     <meta name="description" content="Profesjonalny system do zarządzania danymi i analizą wyników">
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/left-navigation.css">
     <link rel="stylesheet" href="css/management-styles.css">
     <link rel="stylesheet" href="css/study-session.css">
     <link rel="stylesheet" href="css/task-analysis-forms.css">
     <link rel="stylesheet" href="css/enhanced-analytics.css">
+    <!-- Dark theme override must be last among CSS to take precedence -->
+    <link rel="stylesheet" href="css/theme-dark.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="theme-dark">
     <div class="container">
         <header class="header">
             <div class="header-content">
+                <button type="button" id="nav-toggle" class="nav-toggle" aria-label="Toggle Navigation">
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                    <span class="hamburger-line"></span>
+                </button>
                 <h1 class="system-title">System Zarządzania Danymi</h1>
                 <p class="system-subtitle">Profesjonalne rozwiązanie do wprowadzania i analizy danych</p>
             </div>
         </header>
 
-        <!-- Navigation Bar -->
-        <nav class="navigation">
-            <div class="nav-container">
-                <button type="button" id="show-form" class="nav-btn active">
-                    <span class="nav-icon">📝</span>
-                    Wprowadzanie Danych
-                </button>
-                <button type="button" id="show-study" class="nav-btn">
-                    <span class="nav-icon">🎯</span>
-                    Sesje Nauki
-                </button>
-                <button type="button" id="show-analytics" class="nav-btn">
-                    <span class="nav-icon">📊</span>
-                    Analiza Wyników
-                </button>
-                <button type="button" id="show-enhanced-analytics" class="nav-btn">
-                    <span class="nav-icon">🚀</span>
-                    Zaawansowana Analityka
-                </button>
+        <!-- Left Side Navigation -->
+        <nav class="left-navigation" id="left-navigation">
+            <div class="nav-overlay" id="nav-overlay"></div>
+            <div class="nav-sidebar">
+                <div class="nav-header">
+                    <h2 class="nav-title">Menu</h2>
+                    <button type="button" class="nav-close" id="nav-close" aria-label="Close Navigation">
+                        ✕
+                    </button>
+                </div>
+                
+                <div class="nav-content">
+                    <!-- Main Section -->
+                    <div class="nav-section">
+                        <button type="button" class="nav-item active" data-target="main">
+                            <span class="nav-icon">🏠</span>
+                            <span class="nav-label">Main</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Study Session -->
+                    <div class="nav-section">
+                        <button type="button" class="nav-item" data-target="study">
+                            <span class="nav-icon">🎯</span>
+                            <span class="nav-label">Study Session</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Data Analysis Section -->
+                    <div class="nav-section">
+                        <div class="nav-section-header">
+                            <span class="nav-section-title">Data Analysis</span>
+                            <span class="nav-section-icon">📊</span>
+                        </div>
+                        <div class="nav-subsection" id="subjects-nav-list">
+                            <div class="nav-loading">
+                                <span class="loading-text">Loading subjects...</span>
+                            </div>
+                        </div>
+                        <button type="button" class="nav-item" data-target="enhanced-analytics">
+                            <span class="nav-icon">🚀</span>
+                            <span class="nav-label">Advanced Analytics</span>
+                        </button>
+                    </div>
+                    
+                    <!-- Data Entry Section -->
+                    <div class="nav-section">
+                        <div class="nav-section-header">
+                            <span class="nav-section-title">Data Entry</span>
+                            <span class="nav-section-icon">📝</span>
+                        </div>
+                        <div class="nav-subsection">
+                            <button type="button" class="nav-subitem" data-target="add-tasks">
+                                <span class="nav-icon">📝</span>
+                                <span class="nav-label">Add Tasks</span>
+                            </button>
+                            <button type="button" class="nav-subitem" data-target="add-subjects">
+                                <span class="nav-icon">📚</span>
+                                <span class="nav-label">Add Subjects</span>
+                            </button>
+                            <button type="button" class="nav-subitem" data-target="add-categories">
+                                <span class="nav-icon">🏷️</span>
+                                <span class="nav-label">Add Categories</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </nav>
 
@@ -387,12 +443,12 @@
             <!-- Analytics Dashboard Container -->
             <div class="analytics-dashboard" id="analytics-container" style="display: none;">
                 <!-- Analytics Header -->
-                <div class="analytics-header">
+                <!-- <div class="analytics-header">
                     <div class="analytics-title-section">
                         <h1 class="analytics-main-title">📊 Analityka Wyników</h1>
                         <p class="analytics-subtitle">Wybierz przedmiot aby zobaczyć szczegółowe statystyki i postępy</p>
                     </div>
-                </div>
+                </div> -->
                 
                 <!-- Main Analytics Layout -->
                 <div class="analytics-main-layout">
@@ -450,60 +506,120 @@
             <div class="modal-overlay" id="study-session-modal" style="display: none;">
                 <div class="modal-content study-session-content">
                     <div class="modal-header">
-                        <h3 class="modal-title">🎯 Sesja Nauki w Toku</h3>
-                        <div class="session-timer" id="session-timer">00:00</div>
+                        <div class="header-left">
+                            <button type="button" id="exit-session-btn" class="exit-btn" title="Exit Session">
+                                <span class="btn-icon">✕</span>
+                            </button>
+                        </div>
+                        <div class="header-center">
+                            <h3 class="modal-title">🎯 Sesja Nauki w Toku</h3>
+                        </div>
+                        <div class="header-right">
+                            <div class="view-mode-switcher">
+                                <label class="switch-label">Widok:</label>
+                                <div class="mode-switch">
+                                    <input type="checkbox" id="mobile-mode-toggle" class="mode-toggle">
+                                    <span class="mode-slider">
+                                        <span class="mode-icon desktop-icon">💻</span>
+                                        <span class="mode-icon mobile-icon">📱</span>
+                                    </span>
+                                </div>
+                                <span class="mode-label" id="current-mode-label">Desktop</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-body">
-                        <!-- Task Counters -->
-                        <div class="task-counters">
-                            <div class="counter-item">
-                                <div class="counter-value" id="total-tasks-counter">0</div>
-                                <div class="counter-label">Całkowite Zadania</div>
+                        <!-- Clean Mobile Layout -->
+                        <div class="mobile-grid">
+                            <!-- Stats Bar -->
+                            <div class="mobile-stats task-counters">
+                                <div class="stat-item counter-item">
+                                    <div class="stat-value counter-value" id="total-tasks-counter">0</div>
+                                    <div class="stat-label counter-label">Total</div>
+                                </div>
+                                <div class="stat-item counter-item correct">
+                                    <div class="stat-value counter-value" id="correct-tasks-counter">0</div>
+                                    <div class="stat-label counter-label">Correct</div>
+                                </div>
+                                <div class="stat-item counter-item incorrect">
+                                    <div class="stat-value counter-value" id="incorrect-tasks-counter">0</div>
+                                    <div class="stat-label counter-label">Wrong</div>
+                                </div>
                             </div>
-                            <div class="counter-item correct">
-                                <div class="counter-value" id="correct-tasks-counter">0</div>
-                                <div class="counter-label">Poprawne</div>
-                            </div>
-                            <div class="counter-item incorrect">
-                                <div class="counter-value" id="incorrect-tasks-counter">0</div>
-                                <div class="counter-label">Błędne</div>
-                            </div>
-                        </div>
 
-                        <!-- Task Action Buttons -->
-                        <div class="task-actions">
-                            <button type="button" id="correct-task-btn" class="btn btn-success btn-large">
-                                <span class="btn-icon">✅</span>
-                                Zadanie Poprawne
-                            </button>
-                            <button type="button" id="incorrect-task-btn" class="btn btn-error btn-large">
-                                <span class="btn-icon">❌</span>
-                                Zadanie Błędne
-                            </button>
-                        </div>
-
-                        <!-- Current Task Info -->
-                        <div class="current-task-info">
-                            <div class="task-info-item">
-                                <span class="task-info-label">Aktualne zadanie:</span>
-                                <span class="task-info-value" id="current-task-number">1</span>
+                            <!-- Main Action Buttons -->
+                            <div class="mobile-actions task-actions" id="task-action-buttons">
+                                <button type="button" id="correct-task-btn" class="action-btn correct">
+                                    <span class="btn-icon">✓</span>
+                                    <span class="action-label">Correct</span>
+                                </button>
+                                <button type="button" id="incorrect-task-btn" class="action-btn incorrect">
+                                    <span class="btn-icon">×</span>
+                                    <span class="action-label">Wrong</span>
+                                </button>
                             </div>
-                            <div class="task-info-item">
-                                <span class="task-info-label">Czas zadania:</span>
-                                <span class="task-info-value" id="current-task-time">00:00</span>
-                            </div>
-                        </div>
 
-                        <!-- Session Controls -->
-                        <div class="session-controls">
-                            <button type="button" id="finish-session-btn" class="btn btn-primary btn-large">
-                                <span class="btn-icon">🏁</span>
-                                Zakończ Sesję
-                            </button>
-                            <button type="button" id="pause-session-btn" class="btn btn-secondary">
-                                <span class="btn-icon">⏸️</span>
-                                Pauza
-                            </button>
+                            <!-- Form Section -->
+                            <div class="mobile-form task-edit-section" id="task-edit-section">
+                                <h3 class="form-title task-edit-title">Task Details</h3>
+                                <form id="task-edit-form">
+                                    <div class="form-field form-group">
+                                        <label class="field-label form-label">Task Name <span class="required">*</span></label>
+                                        <input type="text" name="task_name" class="field-input form-control" 
+                                               placeholder="Enter task name..." required>
+                                    </div>
+                                    <div class="form-field form-group">
+                                        <label class="field-label form-label">Categories <span class="required">*</span></label>
+                                        <!-- Custom Mobile Category Selector -->
+                                        <div class="category-selector" id="mobile-category-selector">
+                                            <!-- Categories will be populated here -->
+                                        </div>
+                                        <div class="selected-count field-help" id="category-count">Select categories</div>
+                                        <!-- Hidden original select for form submission -->
+                                        <select name="category" class="form-control" multiple required style="display: none;" id="category-select-hidden">
+                                            <!-- Categories will be populated here -->
+                                        </select>
+                                    </div>
+                                    <div class="form-field form-group">
+                                        <label class="field-label form-label">Description</label>
+                                        <textarea name="description" class="field-input field-textarea form-control" 
+                                                  placeholder="Optional description..." rows="2"></textarea>
+                                    </div>
+                                    <!-- Hidden in mobile mode -->
+                                    <div class="task-edit-actions" style="display: none;" id="task-save-actions">
+                                        <button type="button" id="save-task-btn" class="btn btn-primary">
+                                            <span class="btn-icon">💾</span>
+                                            Zapisz i przygotuj następne
+                                        </button>
+                                        <button type="button" id="clear-form-btn" class="btn btn-secondary">
+                                            <span class="btn-icon">🔄</span>
+                                            Wyczyść formularz
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Bottom Info Bar -->
+                            <div class="mobile-info mobile-bottom">
+                                <div class="info-item current-task-info">
+                                    <div class="task-info-item">
+                                        <div class="info-value task-info-value" id="current-task-number">1</div>
+                                        <div class="info-label task-info-label">Task</div>
+                                    </div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-value task-info-value" id="current-task-time">00:00</div>
+                                    <div class="info-label task-info-label">Time</div>
+                                </div>
+                                <div class="info-controls session-controls">
+                                    <button type="button" id="pause-session-btn" class="control-btn btn btn-secondary" title="Pause Session">
+                                        <span class="btn-icon" id="pause-btn-icon">⏸️</span>
+                                    </button>
+                                    <button type="button" id="finish-session-btn" class="control-btn primary btn btn-primary" title="Finish Session">
+                                        <span class="btn-icon">🏁</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -517,24 +633,87 @@
                 </div>
             </div>
 
+            <!-- Study Session Results Modal -->
+            <div class="modal-overlay" id="study-results-modal" style="display: none;">
+                <div class="modal-content study-results-content">
+                    <div class="modal-header">
+                        <h3 class="modal-title">🏆 Sesja Nauki Zakończona</h3>
+                        <button type="button" class="modal-close" id="close-results-modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Final Session Timer -->
+                        <div class="final-timer-display">
+                            <div class="final-timer-icon">⏱️</div>
+                            <div class="final-timer-value" id="final-session-time">00:00</div>
+                            <div class="final-timer-label">Całkowity czas nauki</div>
+                        </div>
+
+                        <!-- Session Summary -->
+                        <div class="session-summary-grid">
+                            <div class="summary-item">
+                                <div class="summary-value" id="final-total-tasks">0</div>
+                                <div class="summary-label">Zadania razem</div>
+                            </div>
+                            <div class="summary-item correct">
+                                <div class="summary-value" id="final-correct-tasks">0</div>
+                                <div class="summary-label">Poprawne</div>
+                            </div>
+                            <div class="summary-item incorrect">
+                                <div class="summary-value" id="final-incorrect-tasks">0</div>
+                                <div class="summary-label">Błędne</div>
+                            </div>
+                            <div class="summary-item accuracy">
+                                <div class="summary-value" id="final-accuracy">0%</div>
+                                <div class="summary-label">Dokładność</div>
+                            </div>
+                        </div>
+
+                        <!-- Small Adjustments Section -->
+                        <div class="small-adjustments">
+                            <h4 class="adjustments-title">🔧 Małe korekty</h4>
+                            <p class="adjustments-description">Możesz wprowadzić drobne zmiany do sesji:</p>
+                            <div class="adjustments-form">
+                                <div class="form-group">
+                                    <label class="form-label">Dodatkowe notatki</label>
+                                    <textarea id="session-notes-adjustment" class="form-control" rows="3" 
+                                              placeholder="Dodaj dodatkowe notatki o sesji..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="results-actions">
+                            <button type="button" id="save-session-results" class="btn btn-success btn-large">
+                                <span class="btn-icon">💾</span>
+                                Zapisz sesję
+                            </button>
+                            <button type="button" id="edit-tasks-detail" class="btn btn-secondary">
+                                <span class="btn-icon">✏️</span>
+                                Edytuj szczegóły zadań
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Study Sessions Dashboard Container -->
             <div class="study-sessions-dashboard" id="study-container" style="display: none; visibility: hidden;">
                 <!-- Enhanced Study Sessions Content -->
-                <div style="background: white; padding: 30px; margin: 20px; border-radius: 12px; border: 2px solid #10b981;">
-                    <h1 style="color: #10b981; font-size: 2.5rem; text-align: center; margin: 20px 0;">🎯 Study Sessions</h1>
-                    <p style="font-size: 1.5rem; text-align: center; color: #333;">If you can see this, the study view is working!</p>
-                    
-                    <div style="background: #667eea; color: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                        <button id="start-study-button" style="background: #10b981; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 18px; cursor: pointer; margin: 10px;">
-                            🏁 Start Study Session
-                        </button>
-                        <button id="view-history-button" style="background: #6b7280; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-size: 18px; cursor: pointer; margin: 10px;">
-                            📅 View History
-                        </button>
-                    </div>
+                    <div class="study-demo-card">
+                        <h1 class="study-demo-title">🎯 Study Sessions</h1>
+                        <p class="study-demo-subtitle">If you can see this, the study view is working!</p>
+                        
+                        <div class="study-demo-actions">
+                            <button id="start-study-button" class="btn btn-success btn-lg study-demo-btn">
+                                🏁 Start Study Session
+                            </button>
+                            <button id="view-history-button" class="btn btn-secondary btn-lg study-demo-btn">
+                                📅 View History
+                            </button>
+                        </div>
 
                     <!-- Study Dashboard Stats -->
-                    <div class="session-stats-panel" style="margin-top: 30px;">
+                        <div class="session-stats-panel">
                         <h2 class="panel-title">📊 Statystyki Dzisiaj</h2>
                         <div class="quick-stats-grid">
                             <div class="quick-stat-item">
@@ -553,7 +732,7 @@
                     </div>
 
                     <!-- Recent Sessions List -->
-                    <div class="recent-sessions-panel" style="margin-top: 30px;">
+                        <div class="recent-sessions-panel">
                         <h2 class="panel-title">📅 Ostatnie Sesje</h2>
                         <div id="recent-sessions-list" class="recent-sessions-list">
                             <div class="no-sessions-placeholder">
@@ -1001,12 +1180,30 @@
     <!-- Chart.js for enhanced analytics -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script>
+      // Improve Chart.js defaults for dark background
+      if (window.Chart) {
+        Chart.defaults.color = '#e6e8ee';
+        Chart.defaults.borderColor = 'rgba(148,163,184,0.25)';
+        Chart.defaults.plugins = Chart.defaults.plugins || {};
+        Chart.defaults.plugins.legend = Chart.defaults.plugins.legend || {};
+        Chart.defaults.plugins.legend.labels = Chart.defaults.plugins.legend.labels || {};
+        Chart.defaults.plugins.legend.labels.color = '#e6e8ee';
+        Chart.defaults.scale = Chart.defaults.scale || {};
+        Chart.defaults.scale.grid = Chart.defaults.scale.grid || {};
+        Chart.defaults.scale.grid.color = 'rgba(148,163,184,0.15)';
+        Chart.defaults.scale.ticks = Chart.defaults.scale.ticks || {};
+        Chart.defaults.scale.ticks.color = '#e6e8ee';
+      }
+    </script>
     
     <!-- JavaScript files -->
     <script src="js/config.js"></script>
     <script src="js/googleSheetsDebugger.js"></script>
     <script src="js/loadingManager.js"></script>
     <script src="js/googleSheetsAPI-v2.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="js/leftNavigation.js"></script>
     <!-- DISABLED: StudyTrackingManager to prevent duplicate sessions -->
     <!-- <script src="js/studyTrackingManager.js"></script> -->
     <script src="js/analyticsManager.js"></script>
@@ -1023,90 +1220,39 @@
             isSubmittingStudyData: false  // Not used since StudyTrackingManager is disabled
         };
         
-        // System Zarządzania Danymi - Ready for operation
-        console.log('📊 System Zarządzania Danymi - Initialized');
+        // System Zarządzania Danymi - Ready for operation with Left Navigation
+        console.log('📊 System Zarządzania Danymi - Initialized with Left Navigation');
         console.log('💡 Use enableGSDebug() to track Google Sheets data retrieval');
         console.log('🎆 StudyTrackingManager disabled - using SimplifiedFormApp only');
-        
-        // Simple fix to ensure study sessions work
         console.log('📚 Study Sessions ready');
+        console.log('🏠 Left Navigation System active');
         
-        // Enhanced navigation system for all containers
-        function setupNavigation() {
-            // Get all navigation buttons
-            const formBtn = document.getElementById('show-form');
-            const studyBtn = document.getElementById('show-study');
-            const analyticsBtn = document.getElementById('show-analytics');
-            const enhancedAnalyticsBtn = document.getElementById('show-enhanced-analytics');
-            
-            // Get all containers
-            const containers = {
-                form: document.getElementById('main-form-container'),
-                study: document.getElementById('study-container'),
-                analytics: document.getElementById('analytics-container'),
-                enhancedAnalytics: document.getElementById('enhanced-analytics-container')
-            };
-            
-            // Function to hide all containers
-            function hideAllContainers() {
-                Object.values(containers).forEach(container => {
-                    if (container) {
-                        container.style.display = 'none';
-                        container.style.visibility = 'hidden';
-                        container.style.opacity = '0';
-                    }
-                });
+        // Initialize main form container as default view
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ensure main form container is visible by default
+            const mainContainer = document.getElementById('main-form-container');
+            if (mainContainer) {
+                mainContainer.style.display = 'block';
+                mainContainer.style.visibility = 'visible';
+                mainContainer.style.opacity = '1';
             }
             
-            // Function to show specific container
-            function showContainer(containerKey) {
-                hideAllContainers();
-                const container = containers[containerKey];
+            // Hide other containers initially
+            const otherContainers = [
+                'study-container',
+                'analytics-container', 
+                'enhanced-analytics-container'
+            ];
+            
+            otherContainers.forEach(containerId => {
+                const container = document.getElementById(containerId);
                 if (container) {
-                    container.style.display = 'block';
-                    container.style.visibility = 'visible';
-                    container.style.opacity = '1';
-                    console.log(`✅ ${containerKey} container shown`);
+                    container.style.display = 'none';
+                    container.style.visibility = 'hidden';
+                    container.style.opacity = '0';
                 }
-                
-                // Update active nav button
-                document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-            }
-            
-            // Set up navigation event listeners
-            if (formBtn) {
-                formBtn.addEventListener('click', () => {
-                    showContainer('form');
-                    formBtn.classList.add('active');
-                });
-            }
-            
-            if (studyBtn) {
-                studyBtn.addEventListener('click', () => {
-                    showContainer('study');
-                    studyBtn.classList.add('active');
-                });
-            }
-            
-            if (analyticsBtn) {
-                analyticsBtn.addEventListener('click', () => {
-                    showContainer('analytics');
-                    analyticsBtn.classList.add('active');
-                });
-            }
-            
-            if (enhancedAnalyticsBtn) {
-                enhancedAnalyticsBtn.addEventListener('click', () => {
-                    showContainer('enhancedAnalytics');
-                    enhancedAnalyticsBtn.classList.add('active');
-                    
-                    // Initialize enhanced analytics if not already done
-                    if (!window.enhancedAnalyticsApp) {
-                        window.initializeEnhancedAnalytics();
-                    }
-                });
-            }
-        }
+            });
+        });
         
         // Enhanced Analytics Initialization
         window.initializeEnhancedAnalytics = function() {
@@ -1853,8 +1999,7 @@
             }
         }
         
-        // Setup navigation
-        setTimeout(setupNavigation, 100);
+        // LeftNavigationManager handles navigation initialization
     </script>
 </body>
 </html>

@@ -1,22 +1,25 @@
 /**
- * Task Item Size Consistency Fixes
- * This CSS ensures all task-item elements are the same size regardless of correct/incorrect status
+ * Task Item Auto-Height Fixes
+ * This CSS ensures all task-item elements expand to show all content regardless of correct/incorrect status
+ * Updated to use auto height instead of fixed height
  */
 
-/* Make all task items have the same height and dimensions */
+/* Make all task items show all content with auto height */
 .task-item {
-    min-height: 160px;
+    min-height: auto;
+    height: auto;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     box-sizing: border-box;
 }
 
-/* Ensure that correct and incorrect items have the same size */
+/* Ensure that correct and incorrect items use auto height */
 .task-item.correct,
 .task-item.incorrect {
-    /* Keep the same size as regular task items */
-    min-height: 160px;
+    /* Use auto height to show all content */
+    min-height: auto;
+    height: auto;
 }
 
 /* Ensure that content within task items aligns consistently */
@@ -27,7 +30,32 @@
 /* Add specific CSS for the task items with the IDs you provided */
 .task-item[data-task-id="task-hwdp-1758129168905"],
 .task-item[data-task-id="task-33333-1758129168906"] {
-    min-height: 160px;
+    min-height: auto;
+    height: auto;
     /* Optional: highlight these specific items for testing */
     /* border: 2px solid var(--primary-blue); */
+}
+
+/* Ensure all task content is visible and properly spaced */
+.task-item .task-title {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.task-item .task-description {
+    max-height: none;
+    overflow: visible;
+}
+
+.task-item .task-description-text {
+    max-height: none;
+    overflow: visible;
+    white-space: pre-wrap;
+}
+
+/* Ensure task footer is always visible */
+.task-item .task-footer {
+    margin-top: auto;
+    flex-shrink: 0;
 }

@@ -17,8 +17,9 @@ class AnalyticsManager {
         this.categoryPerformance = [];
         this.weakCategories = [];
         
-        // Charts functionality removed
+        // Charts integration
         this.timeSeriesData = {};
+        this.chartsManager = null;
         
         this.init();
     }
@@ -26,8 +27,12 @@ class AnalyticsManager {
     /**
      * Initialize analytics manager
      */
-    init() {
+init() {
         this.setupEventListeners();
+        // Initialize ChartsManager lazily to avoid dependency issues
+        if (typeof ChartsManager !== 'undefined') {
+            this.chartsManager = new ChartsManager(this);
+        }
         // Analytics Manager initialized
     }
     
@@ -283,26 +288,62 @@ class AnalyticsManager {
                 console.log('%c📋 [ANALYTICS] Raw StudyTasks data:', 'color: #7c3aed; font-weight: bold;', tasks);
                 
                 // Normalize task format for analytics - StudyTasks structure with multiple categories support
-                this.tasks = tasks.map(task => {
-                    const categoriesString = task.categories || task.category || 'Unknown';
-                    const categoriesArray = this.parseCategoriesString(categoriesString);
-                    
-                    return {
-                        name: task.task_name || task.name || 'Unnamed Task',
-                        subject: task.subject || 'Unknown',
-                        category: categoriesString, // Keep original for backward compatibility
-                        categories: categoriesArray, // Array of individual categories
-                        categoriesString: categoriesString, // Original string for display
-                        correctness: task.correctly_completed === 'Yes' || task.correctness === 'Poprawnie' || task.correctness === true,
-                        timestamp: task.start_time || task.timestamp || new Date().toISOString(),
-                        date: (task.start_time || task.timestamp || new Date().toISOString()).split('T')[0],
-                        description: task.description || '',
-                        location: task.location || '',
-                        session_id: task.session_id || '',
-                        task_id: task.task_id || '',
-                        // Additional StudyTasks fields
-                        end_time: task.end_time || null
-                    };
+                this.tasks = tasks.map((task, index) => {
+                    try {
+                        const categoriesString = task.categories || task.category || 'Unknown';
+                        
+                        // Debug logging for problematic categories
+                        if (index < 3) {
+                            console.log(`%c🔍 [ANALYTICS] Task ${index + 1} categories debug:`, 'color: #f59e0b; font-weight: 600;');
+                            console.log('Raw categories value:', categoriesString);
+                            console.log('Categories type:', typeof categoriesString);
+                            console.log('Categories is array:', Array.isArray(categoriesString));
+                        }
+                        
+                        const categoriesArray = this.parseCategoriesString(categoriesString);
+                        
+                        if (index < 3) {
+                            console.log('Parsed categories array:', categoriesArray);
+                        }
+                        
+                        return {
+                            name: task.task_name || task.name || 'Unnamed Task',
+                            subject: task.subject || 'Unknown',
+                            category: categoriesString, // Keep original for backward compatibility
+                            categories: categoriesArray, // Array of individual categories
+                            categoriesString: categoriesString, // Original string for display
+                            correctness: task.correctly_completed === 'Yes' || task.correctness === 'Poprawnie' || task.correctness === true,
+                            timestamp: task.start_time || task.timestamp || new Date().toISOString(),
+                            date: (task.start_time || task.timestamp || new Date().toISOString()).split('T')[0],
+                            description: task.description || '',
+                            location: task.location || '',
+                            session_id: task.session_id || '',
+                            task_id: task.task_id || '',
+                            // Additional StudyTasks fields
+                            start_time: task.start_time || null,
+                            end_time: task.end_time || null
+                        };
+                    } catch (taskError) {
+                        console.error(`Error processing task ${index + 1}:`, taskError);
+                        console.error('Problematic task data:', task);
+                        
+                        // Return safe fallback task
+                        return {
+                            name: task.task_name || task.name || 'Error Task',
+                            subject: task.subject || 'Unknown',
+                            category: 'Unknown',
+                            categories: ['Unknown'],
+                            categoriesString: 'Unknown',
+                            correctness: false,
+                            timestamp: new Date().toISOString(),
+                            date: new Date().toISOString().split('T')[0],
+                            description: 'Task processing error',
+                            location: '',
+                            session_id: task.session_id || '',
+                            task_id: task.task_id || '',
+                            end_time: null
+                        };
+                    }
                 });
                 
                 console.log('%c✅ Analytics StudyTasks loaded:', 'color: #10b981; font-weight: 600;', this.tasks.length, 'tasks');
@@ -322,24 +363,55 @@ class AnalyticsManager {
     
     /**
      * Parse categories string into array of individual categories
-     * @param {string} categoriesString - Comma-separated categories string
+     * @param {any} categoriesString - Comma-separated categories string (or other data types)
      * @returns {Array} Array of individual category names
      */
     parseCategoriesString(categoriesString) {
+        // Handle null, undefined, or empty values
         if (!categoriesString || categoriesString === 'Unknown') {
             return ['Unknown'];
         }
         
-        return categoriesString
-            .split(',')
-            .map(cat => cat.trim())
-            .filter(cat => cat && cat.length > 0);
+        // Convert to string if it's not already a string
+        let categoriesStr;
+        if (typeof categoriesString === 'string') {
+            categoriesStr = categoriesString;
+        } else if (typeof categoriesString === 'number') {
+            categoriesStr = categoriesString.toString();
+        } else if (categoriesString && typeof categoriesString === 'object') {
+            // Handle objects, arrays, etc.
+            if (Array.isArray(categoriesString)) {
+                // Already an array, return as-is (with string conversion)
+                return categoriesString.map(item => String(item).trim()).filter(cat => cat && cat.length > 0);
+            } else {
+                categoriesStr = categoriesString.toString();
+            }
+        } else {
+            // Fallback: convert to string
+            categoriesStr = String(categoriesString);
+        }
+        
+        // Handle edge cases after string conversion
+        if (!categoriesStr || categoriesStr === 'null' || categoriesStr === 'undefined' || categoriesStr === '[object Object]') {
+            return ['Unknown'];
+        }
+        
+        // Split and process categories
+        try {
+            return categoriesStr
+                .split(',')
+                .map(cat => cat.trim())
+                .filter(cat => cat && cat.length > 0);
+        } catch (error) {
+            console.warn('Error parsing categories string:', error, 'Original value:', categoriesString);
+            return ['Unknown'];
+        }
     }
     
     /**
      * Process analytics data - NEVER sum up subjects together, analyze each separately
      */
-    processAnalyticsData() {
+processAnalyticsData() {
         // Group tasks by subject - each subject analyzed completely separately
         this.subjectAnalytics = this.groupTasksBySubject();
         
@@ -348,8 +420,17 @@ class AnalyticsManager {
         // Process each subject individually 
         this.processSubjectAnalytics();
         
-        // Charts functionality removed - skip time series processing
-        this.timeSeriesData = {};
+        // Build time series data for charts if charts manager is available
+        if (this.chartsManager) {
+            try {
+                this.timeSeriesData = this.chartsManager.processTimeSeriesData(this.subjectAnalytics);
+            } catch (e) {
+                console.warn('Time series processing failed:', e);
+                this.timeSeriesData = {};
+            }
+        } else {
+            this.timeSeriesData = {};
+        }
         
         console.log('%c✅ [ANALYTICS] Processed Subject Analytics:', 'color: #10b981; font-weight: bold;', this.subjectAnalytics);
         console.log('%c📈 [ANALYTICS] Time Series Data:', 'color: #8b5cf6; font-weight: bold;', this.timeSeriesData);
@@ -557,20 +638,25 @@ class AnalyticsManager {
         
         if (!analyticsContent) return;
         
-        // Check if we have data
+        // Always hide the internal subject list (we use left navigation now)
+        if (subjectSelectionSection) {
+            subjectSelectionSection.style.display = 'none';
+        }
+        
+        // If there is no data yet, show a helpful message
         if (!this.subjectAnalytics || Object.keys(this.subjectAnalytics).length === 0) {
             this.renderNoDataMessage();
-            if (subjectSelectionSection) {
-                subjectSelectionSection.style.display = 'none';
-            }
             return;
         }
         
-        // Show subject selection buttons
-        this.renderSubjectButtons();
-        
-        // Hide content initially - user must select a subject
-        this.renderSelectSubjectMessage();
+        // Show a simple prompt to pick a subject from the left navigation
+        analyticsContent.innerHTML = `
+            <div class="no-analytics-data">
+                <div class="no-analytics-icon">👈</div>
+                <div class="no-analytics-title">Wybierz przedmiot z lewego menu</div>
+                <div class="no-analytics-subtitle">Kliknij przedmiot w lewym pasku nawigacji, aby zobaczyć szczegóły.</div>
+            </div>
+        `;
     }
     
     /**
@@ -724,8 +810,22 @@ class AnalyticsManager {
     /**
      * Show analytics for selected subject
      */
-    showSubjectAnalytics(subjectName) {
-        const subject = this.subjectAnalytics[subjectName];
+async showSubjectAnalytics(subjectName) {
+        // Ensure analytics data is available
+        if (!this.subjectAnalytics || !this.subjectAnalytics[subjectName]) {
+            try {
+                await this.loadAnalyticsData();
+            } catch (e) {
+                console.warn('Failed to load analytics data on demand:', e);
+            }
+        }
+        // Try again after loading
+        let subject = this.subjectAnalytics ? this.subjectAnalytics[subjectName] : null;
+        if (!subject) {
+            // Try case-insensitive match as fallback
+            const key = Object.keys(this.subjectAnalytics || {}).find(k => k.toLowerCase() === String(subjectName).toLowerCase());
+            if (key) subject = this.subjectAnalytics[key];
+        }
         if (!subject) return;
         
         const analyticsContent = document.getElementById('analytics-content');
@@ -747,7 +847,25 @@ class AnalyticsManager {
         
         analyticsContent.innerHTML = html;
         
-        // Charts functionality removed
+        // Render charts and time analysis
+        const safeId = this.getSafeId(subject.name);
+        if (this.chartsManager) {
+            // Daily accuracy with overall line
+            this.chartsManager.createDailyAccuracyWithOverallLineChart(
+                subject.tasks,
+                subject.stats?.correctPercentage || 0,
+                `daily-accuracy-${safeId}`
+            );
+            // Daily tasks combined into the daily accuracy chart (y1)
+            // this.chartsManager.createDailyTasksStackedChart(subject.tasks, `daily-tasks-${safeId}`);
+            // Category accuracy over time
+            this.chartsManager.createCategoryAccuracyLineChart(
+                subject.tasks,
+                `category-accuracy-${safeId}`
+            );
+        }
+        // Time analysis
+        this.renderTimeAnalysis(subject);
     }
     
     // Charts functionality removed
@@ -844,13 +962,113 @@ class AnalyticsManager {
      * Render history chart for new card format
      */
     renderHistoryChart(tasks) {
-        const recentTasks = tasks.slice(-10); // Last 10 tasks
-        return recentTasks.map(task => {
-            const isCorrect = task.correctness === 'Poprawnie';
+        const recentTasks = tasks.slice(-10);
+        const containerId = `recent-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+
+        // Compute stats
+        const correctCount = recentTasks.filter(t => this.isTaskCorrect(t)).length;
+        const total = recentTasks.length;
+        const incorrectCount = total - correctCount;
+        const percent = total > 0 ? Math.round((correctCount/total)*100) : 0;
+
+        // Current incorrect-only streak or correct-streak? We'll show current correct streak
+        let currentCorrectStreak = 0;
+        for (let i = recentTasks.length - 1; i >= 0; i--) {
+            if (this.isTaskCorrect(recentTasks[i])) currentCorrectStreak++; else break;
+        }
+
+        // Build timeline bars
+        const timeline = recentTasks.map((task, index) => {
+            const isCorrect = this.isTaskCorrect(task);
             const className = isCorrect ? 'correct' : 'incorrect';
             const statusText = isCorrect ? 'Poprawne' : 'Błędne';
-            return `<div class="mini-bar ${className}" title="${this.escapeHtml(task.name)}: ${statusText}"></div>`;
+            const label = task.name ? this.escapeHtml(task.name) : (task.timestamp || 'Zadanie');
+            const dateStr = this.formatTaskDate(task.timestamp);
+            const timeStr = this.formatTaskTime(task.timestamp);
+            const tip = `${dateStr} ${timeStr} • ${label} • ${statusText}`;
+            return `<div class="mini-bar ${className}" data-index="${index}" title="${this.escapeHtml(tip)}"></div>`;
         }).join('');
+
+        // Build details list
+        const details = recentTasks.map((task, index) => {
+            const isCorrect = this.isTaskCorrect(task);
+            const correctnessClass = isCorrect ? 'correct' : 'incorrect';
+            const correctnessText = isCorrect ? '✅ Poprawne' : '❌ Niepoprawne';
+            const dateStr = this.formatTaskDate(task.timestamp);
+            const timeStr = this.formatTaskTime(task.timestamp);
+            const cats = task.categoriesString || task.category || '';
+            // Optional duration if available
+            let durationHtml = '';
+            if (task.start_time && task.end_time) {
+                const dur = new Date(task.end_time) - new Date(task.start_time);
+                if (dur > 0) durationHtml = `<span class="detail-time">⏱️ ${this.formatDuration(dur)}</span>`;
+            }
+            return `
+                <div class="detail-item ${correctnessClass}" data-incorrect="${!isCorrect}">
+                    <div class="detail-left">
+                        <div class="dot ${correctnessClass}"></div>
+                        <div class="detail-main">
+                            <div class="detail-title">${this.escapeHtml(task.name || 'Zadanie')}</div>
+                            <div class="detail-meta">${dateStr} • ${timeStr} ${durationHtml}</div>
+                        </div>
+                    </div>
+                    <div class="detail-right">
+                        <span class="detail-status ${correctnessClass}">${correctnessText}</span>
+                        ${cats ? `<span class="detail-cats">🏷️ ${this.escapeHtml(cats)}</span>` : ''}
+                    </div>
+                </div>`;
+        }).join('');
+
+        // Build widget
+        return `
+            <div class="recent-tasks-widget" id="${containerId}">
+                <div class="recent-summary">
+                    <span class="chip neutral">Ostatnie ${total}</span>
+                    <span class="chip success">${correctCount} poprawnych</span>
+                    <span class="chip error">${incorrectCount} błędnych</span>
+                    <span class="chip info">${percent}%</span>
+                    <span class="chip streak">🔥 Passa: ${currentCorrectStreak}</span>
+                    <div class="recent-actions">
+                        <label class="control-item">
+                            <input type="checkbox" onchange="window.analyticsManager && window.analyticsManager.setRecentFilterIncorrect('${containerId}', this.checked)">
+                            Tylko błędne
+                        </label>
+                        <button type="button" class="btn-mini" onclick="window.analyticsManager && window.analyticsManager.toggleRecentDetails('${containerId}')">Szczegóły</button>
+                    </div>
+                </div>
+                <div class="timeline" id="${containerId}-timeline">
+                    ${timeline}
+                </div>
+                <div class="recent-details" id="${containerId}-details" style="display:none;">
+                    ${details}
+                </div>
+            </div>
+        `;
+    }
+
+    toggleRecentDetails(containerId) {
+        const el = document.getElementById(`${containerId}-details`);
+        if (!el) return;
+        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+    }
+
+    setRecentFilterIncorrect(containerId, onlyIncorrect) {
+        const details = document.getElementById(`${containerId}-details`);
+        const timeline = document.getElementById(`${containerId}-timeline`);
+        if (details) {
+            const items = details.querySelectorAll('.detail-item');
+            items.forEach(it => {
+                const isIncorrect = it.getAttribute('data-incorrect') === 'true';
+                if (onlyIncorrect) {
+                    it.style.display = isIncorrect ? 'flex' : 'none';
+                } else {
+                    it.style.display = 'flex';
+                }
+            });
+        }
+        if (timeline) {
+            if (onlyIncorrect) timeline.classList.add('dim-correct'); else timeline.classList.remove('dim-correct');
+        }
     }
     
     /**
@@ -903,7 +1121,40 @@ class AnalyticsManager {
             <div class="mini-chart-label">Ostatnie ${recentTasks.length} zadań</div>
         `;
     }
-    
+
+    /**
+     * Compute simple time-of-day summary for a subject
+     */
+    computeTimeOfDaySummary(tasks) {
+        const periods = {
+            RANO: { label: 'Rano (6:00–12:00)', start: 6, end: 12, total: 0, correct: 0 },
+            POPO: { label: 'Popołudnie (12:00–18:00)', start: 12, end: 18, total: 0, correct: 0 },
+            WIEC: { label: 'Wieczór (18:00–24:00)', start: 18, end: 24, total: 0, correct: 0 },
+            NOC:  { label: 'Noc (0:00–6:00)', start: 0, end: 6, total: 0, correct: 0 }
+        };
+        (tasks || []).forEach(task => {
+            const ts = task.start_time || task.timestamp;
+            const hour = ts ? new Date(ts).getHours() : null;
+            if (hour === null || isNaN(hour)) return;
+            let key;
+            if (hour >= 6 && hour < 12) key = 'RANO';
+            else if (hour >= 12 && hour < 18) key = 'POPO';
+            else if (hour >= 18 && hour < 24) key = 'WIEC';
+            else key = 'NOC';
+            periods[key].total++;
+            if (this.isTaskCorrect(task)) periods[key].correct++;
+        });
+        // compute best
+        let best = null;
+        Object.values(periods).forEach(p => {
+            if (p.total > 0) {
+                const acc = Math.round((p.correct / p.total) * 100);
+                if (!best || acc > best.accuracy) best = { label: p.label, accuracy: acc };
+            }
+        });
+        return best; // may be null
+    }
+
     /**
      * Render a complete section for one subject
      */
@@ -912,6 +1163,7 @@ class AnalyticsManager {
         const categoryPerformance = subject.categoryPerformance;
         const strongCategories = subject.strongCategories;
         const weakCategories = subject.weakCategories;
+        const safeId = this.getSafeId(subject.name);
         
         return `
             <div class="subject-analytics-section">
@@ -924,7 +1176,7 @@ class AnalyticsManager {
                     </p>
                 </div>
                 
-                <!-- Summary Cards -->
+                <!-- Stats Summary Cards -->
                 <div class="analytics-summary-cards">
                     <div class="analytics-summary-card">
                         <div class="analytics-card-icon">🎯</div>
@@ -942,14 +1194,71 @@ class AnalyticsManager {
                         <p class="analytics-card-label">Aktywne kategorie</p>
                     </div>
                 </div>
+
+                <!-- Extra Subject Metrics -->
+                ${(() => {
+                    const ts = (this.timeSeriesData && this.timeSeriesData[subject.name] && this.timeSeriesData[subject.name].data) || [];
+                    let avgAcc = 0, bestAcc = 0, bestDate = null;
+                    if (ts.length > 0) {
+                        const sum = ts.reduce((s,d)=> s + (d.dailyAccuracy || 0), 0);
+                        avgAcc = Math.round(sum / ts.length);
+                        const best = ts.reduce((b,d)=> (d.dailyAccuracy||0) > (b.dailyAccuracy||0) ? d : b, ts[0]);
+                        bestAcc = best.dailyAccuracy || 0;
+                        bestDate = best.date ? new Date(best.date) : null;
+                    }
+                    const tod = this.computeTimeOfDaySummary(subject.tasks);
+                    const bestDateStr = bestDate ? bestDate.toLocaleDateString('pl-PL') : '—';
+                    return `
+                        <div class="analytics-summary-cards">
+                            <div class="analytics-summary-card">
+                                <div class="analytics-card-icon">📈</div>
+                                <h4 class="analytics-card-value neutral">${avgAcc}%</h4>
+                                <p class="analytics-card-label">Średnia skuteczność</p>
+                                <p class="analytics-card-subtext">w analizowanym okresie</p>
+                            </div>
+                            <div class="analytics-summary-card">
+                                <div class="analytics-card-icon">📅</div>
+                                <h4 class="analytics-card-value neutral">${bestAcc}%</h4>
+                                <p class="analytics-card-label">Najlepszy dzień</p>
+                                <p class="analytics-card-subtext">${bestDateStr}</p>
+                            </div>
+                            <div class="analytics-summary-card">
+                                <div class="analytics-card-icon">🕐</div>
+                                <h4 class="analytics-card-value neutral">${tod ? tod.accuracy : '—'}%</h4>
+                                <p class="analytics-card-label">Najlepsza pora dnia</p>
+                                <p class="analytics-card-subtext">${tod ? tod.label : 'Brak danych'}</p>
+                            </div>
+                        </div>
+                    `;
+                })()}
                 
-                <!-- Charts functionality removed -->
-                
-                <!-- Performance Sections -->
+                <!-- 1) Performance Sections -->
                 ${this.renderPerformanceSections(strongCategories, weakCategories)}
                 
-                <!-- Detailed Table -->
+                <!-- 2) Szczegółowe statystyki - ${this.escapeHtml(subject.name)} -->
                 ${this.renderSubjectDetailedTable(categoryPerformance, subject.name)}
+                
+                <!-- 3) Dzienna dokładność vs ogólna -->
+                <div class="subject-chart-card" style="grid-column: 1 / -1; background: transparent; border: none; box-shadow: none; padding: 0;">
+                    <div class="enhanced-chart-section">
+                        <div class="enhanced-chart-header">
+                            <h2 class="enhanced-chart-title">📊 Dzienna dokładność vs ogólna</h2>
+                        </div>
+                        <div class="enhanced-chart-container" id="daily-accuracy-${safeId}"></div>
+                    </div>
+                </div>
+                
+                <!-- 4) Skuteczność kategorii w czasie -->
+                <div class="subject-chart-card">
+                    <h4 class="subject-chart-title">🏷️ Skuteczność kategorii w czasie</h4>
+                    <div class="subject-chart" id="category-accuracy-${safeId}"></div>
+                </div>
+                
+                <!-- 5) Analiza czasu -->
+                <div class="time-analysis-section" id="time-analysis-${safeId}">
+                    <h4 class="subject-chart-title">⏱️ Analiza czasu</h4>
+                    <div class="time-analysis-content"></div>
+                </div>
             </div>
         `;
     }
@@ -1555,6 +1864,106 @@ class AnalyticsManager {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    /**
+     * Convert arbitrary string to a safe DOM id suffix
+     */
+    getSafeId(text) {
+        return String(text || 'subject').toLowerCase().replace(/[^a-z0-9]+/gi, '-');
+    }
+
+    /**
+     * Format a duration in ms to human string, e.g., 2h 30min
+     */
+    formatDuration(ms) {
+        if (!ms || ms <= 0) return '0m';
+        const totalMinutes = Math.floor(ms / 60000);
+        const h = Math.floor(totalMinutes / 60);
+        const m = totalMinutes % 60;
+        const parts = [];
+        if (h > 0) parts.push(`${h}h`);
+        if (m > 0) parts.push(`${m}min`);
+        return parts.join(' ');
+    }
+
+    /**
+     * Compute time analysis for a subject
+     */
+    computeSubjectTimeAnalysis(subject) {
+        const result = { totalMs: 0, byCategory: [] };
+        const perCategory = {};
+        let totalTasksWithTime = 0;
+        (subject.tasks || []).forEach(task => {
+            if (task.start_time && task.end_time) {
+                const dur = new Date(task.end_time) - new Date(task.start_time);
+                if (isFinite(dur) && dur > 0) {
+                    result.totalMs += dur;
+                    totalTasksWithTime++;
+                    const cats = Array.isArray(task.categories) && task.categories.length ? task.categories : [task.category || 'Unknown'];
+                    cats.forEach(cat => {
+                        if (!perCategory[cat]) perCategory[cat] = { name: cat, timeMs: 0, tasksCount: 0 };
+                        perCategory[cat].timeMs += dur;
+                        perCategory[cat].tasksCount += 1;
+                    });
+                }
+            }
+        });
+        result.byCategory = Object.values(perCategory)
+            .map(c => ({ ...c, avgMs: c.tasksCount > 0 ? Math.round(c.timeMs / c.tasksCount) : 0 }))
+            .sort((a, b) => b.timeMs - a.timeMs);
+        result.averageTaskMs = totalTasksWithTime > 0 ? Math.round(result.totalMs / totalTasksWithTime) : 0;
+        return result;
+    }
+
+    /**
+     * Render time analysis section
+     */
+    renderTimeAnalysis(subject) {
+        const safeId = this.getSafeId(subject.name);
+        const section = document.getElementById(`time-analysis-${safeId}`);
+        if (!section) return;
+        const content = section.querySelector('.time-analysis-content') || section;
+        const analysis = this.computeSubjectTimeAnalysis(subject);
+        if (analysis.totalMs <= 0) {
+            console.warn('[TimeAnalysis] No time data found for subject', subject.name, {
+                sampleTask: (subject.tasks || [])[0]
+            });
+            content.innerHTML = `
+                <div class="no-analytics-data">
+                    <div class="no-analytics-icon">⏱️</div>
+                    <div class="no-analytics-text">Brak danych o czasie</div>
+                    <div class="no-analytics-subtitle">Brak pól start_time/end_time w zadaniach. Upewnij się, że zapisujesz start i koniec zadania.</div>
+                </div>
+            `;
+            return;
+        }
+        const totalFormatted = this.formatDuration(analysis.totalMs);
+        const avgFormatted = this.formatDuration(analysis.averageTaskMs);
+        const topCats = analysis.byCategory.slice(0, 6).map(cat => `
+            <div class="time-cat-item">
+                <div class="time-cat-name">${this.escapeHtml(cat.name)}</div>
+                <div class="time-cat-values">
+                    <span class="time-total">${this.formatDuration(cat.timeMs)}</span>
+                    <span class="time-sep">·</span>
+                    <span class="time-avg">${this.formatDuration(cat.avgMs)}/zad.</span>
+                    <span class="time-count">(${cat.tasksCount})</span>
+                </div>
+            </div>
+        `).join('');
+        content.innerHTML = `
+            <div class="time-summary-cards">
+                <div class="time-card"><div class="time-card-title">Czas łącznie</div><div class="time-card-value">${totalFormatted}</div></div>
+                <div class="time-card"><div class="time-card-title">Śr. czas/zadanie</div><div class="time-card-value">${avgFormatted}</div></div>
+            </div>
+            <div class="time-categories-list">${topCats}</div>
+        `;
+        // Update hero card time if present
+        const heroTime = document.getElementById(`hero-time-${safeId}`);
+        if (heroTime) {
+            const val = heroTime.querySelector('.hero-value');
+            if (val) val.textContent = totalFormatted;
+        }
     }
     
     /**

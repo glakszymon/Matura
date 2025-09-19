@@ -22,6 +22,563 @@ class ChartsManager {
     }
 
     /**
+     * Utility to group tasks by date and compute correct/incorrect and accuracy per day
+     */
+    buildDailyAggregates(tasks) {
+        const byDate = {};
+        tasks.forEach(task => {
+            const date = (task.start_time || task.timestamp || new Date().toISOString()).split('T')[0];
+            if (!byDate[date]) {
+                byDate[date] = { date, total: 0, correct: 0, incorrect: 0 };
+            }
+            byDate[date].total++;
+            if (this.isTaskCorrect(task)) {
+                byDate[date].correct++;
+            } else {
+                byDate[date].incorrect++;
+            }
+        });
+        const sortedDates = Object.keys(byDate).sort();
+        return sortedDates.map(d => ({
+            date: d,
+            displayDate: new Date(d).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' }),
+            total: byDate[d].total,
+            correct: byDate[d].correct,
+            incorrect: byDate[d].incorrect,
+            accuracy: byDate[d].total > 0 ? Math.round((byDate[d].correct / byDate[d].total) * 100) : 0
+        }));
+    }
+
+    /**
+     * Create stacked daily tasks chart (correct vs incorrect)
+     */
+    createDailyTasksStackedChart(tasks, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+        if (this.charts[containerId]) this.charts[containerId].destroy();
+        const daily = this.buildDailyAggregates(tasks);
+        if (daily.length === 0) {
+            container.innerHTML = `
+                <div class="chart-no-data">
+                    <div class="no-data-icon">🧮</div>
+                    <div class="no-data-text">Brak danych dziennych</div>
+                </div>
+            `;
+            return null;
+        }
+        container.innerHTML = '<canvas id="' + containerId + '-canvas"></canvas>';
+        const ctx = document.getElementById(containerId + '-canvas');
+        const config = {
+            type: 'bar',
+            data: {
+                labels: daily.map(d => d.displayDate),
+                datasets: [
+                    {
+                        label: 'Poprawne',
+                        data: daily.map(d => d.correct),
+                        backgroundColor: this.chartColors.success + 'cc',
+                        borderColor: this.chartColors.success,
+                        borderWidth: 1,
+                        stack: 'tasks'
+                    },
+                    {
+                        label: 'Niepoprawne',
+                        data: daily.map(d => d.incorrect),
+                        backgroundColor: this.chartColors.error + 'cc',
+                        borderColor: this.chartColors.error,
+                        borderWidth: 1,
+                        stack: 'tasks'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Liczba zadań dziennie (poprawne vs niepoprawne)' },
+                    tooltip: {
+                        callbacks: {
+                            footer: (items) => {
+                                const i = items[0].dataIndex;
+                                const total = daily[i].total;
+                                const acc = daily[i].accuracy;
+                                return `Razem: ${total} • Dokładność: ${acc}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true }
+                }
+            }
+        };
+        const chart = new Chart(ctx, config);
+        this.charts[containerId] = chart;
+        return chart;
+    }
+
+    /**
+     * Create daily accuracy bar chart with an overall subject accuracy reference line
+     */
+    createDailyAccuracyWithOverallLineChart(tasks, overallAccuracy, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+        if (this.charts[containerId]) this.charts[containerId].destroy();
+        const daily = this.buildDailyAggregates(tasks);
+        if (daily.length === 0) {
+            container.innerHTML = `
+                <div class="chart-no-data">
+                    <div class="no-data-icon">📊</div>
+                    <div class="no-data-text">Brak danych o dokładności</div>
+                </div>
+            `;
+            return null;
+        }
+        container.innerHTML = '<canvas id="' + containerId + '-canvas" style="display: block; box-sizing: border-box; height: 400px; width: 100%;"></canvas>';
+        const ctx = document.getElementById(containerId + '-canvas');
+        const labels = daily.map(d => d.displayDate);
+        const config = {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    // Bars: daily tasks (stacked correct/incorrect) on right axis
+                    {
+                        type: 'bar',
+                        label: 'Zadania: poprawne',
+                        data: daily.map(d => d.correct),
+                        backgroundColor: this.chartColors.success + 'b3',
+                        borderColor: this.chartColors.success,
+                        borderWidth: 1,
+                        yAxisID: 'y1',
+                        stack: 'tasks',
+                        order: 1
+                    },
+                    {
+                        type: 'bar',
+                        label: 'Zadania: niepoprawne',
+                        data: daily.map(d => d.incorrect),
+                        backgroundColor: this.chartColors.error + 'b3',
+                        borderColor: this.chartColors.error,
+                        borderWidth: 1,
+                        yAxisID: 'y1',
+                        stack: 'tasks',
+                        order: 1
+                    },
+                    // Lines: daily accuracy and overall accuracy on left axis
+                    {
+                        label: 'Dzienna dokładność (%)',
+                        data: daily.map(d => d.accuracy),
+                        borderColor: this.chartColors.info,
+                        backgroundColor: this.chartColors.info + '20',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 3,
+                        pointBackgroundColor: this.chartColors.info,
+                        yAxisID: 'y',
+                        order: 2
+                    },
+                    {
+                        label: 'Ogólna dokładność (%)',
+                        data: labels.map(() => overallAccuracy || 0),
+                        borderColor: this.chartColors.secondary,
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.2,
+                        pointRadius: 0,
+                        borderDash: [6, 4],
+                        yAxisID: 'y',
+                        order: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Dokładność dziennie vs. ogólna' },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                if (ctx.dataset.yAxisID === 'y') {
+                                    return `${ctx.dataset.label}: ${ctx.parsed.y}%`;
+                                } else {
+                                    return `${ctx.dataset.label}: ${ctx.parsed.y}`;
+                                }
+                            },
+                            footer: (items) => {
+                                const i = items[0].dataIndex;
+                                const total = daily[i].total;
+                                const acc = daily[i].accuracy;
+                                return `Razem: ${total} • Dokładność: ${acc}%`;
+                            }
+                        }
+                    }
+                },
+                interaction: { intersect: false, mode: 'index' },
+                scales: {
+                    x: {
+                        stacked: true
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: (v) => v + '%' },
+                        title: { display: true, text: 'Dokładność (%)' }
+                    },
+                    y1: {
+                        beginAtZero: true,
+                        position: 'right',
+                        stacked: true,
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Liczba zadań' }
+                    }
+                }
+            }
+        };
+        const chart = new Chart(ctx, config);
+        this.charts[containerId] = chart;
+        return chart;
+    }
+
+    /**
+     * Create a time-based line chart where each line represents a category accuracy over time
+     */
+    createCategoryAccuracyLineChart(tasks, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+        if (this.charts[containerId]) this.charts[containerId].destroy();
+
+        // Build per-day per-category counts
+        const datesSet = new Set();
+        const byDateCat = {};
+        tasks.forEach(task => {
+            const date = (task.start_time || task.timestamp || new Date().toISOString()).split('T')[0];
+            datesSet.add(date);
+            const cats = Array.isArray(task.categories) && task.categories.length ? task.categories : [task.category || 'Unknown'];
+            cats.forEach(cat => {
+                byDateCat[date] = byDateCat[date] || {};
+                byDateCat[date][cat] = byDateCat[date][cat] || { total: 0, correct: 0 };
+                byDateCat[date][cat].total++;
+                if (this.isTaskCorrect(task)) byDateCat[date][cat].correct++;
+            });
+        });
+        const sortedDates = Array.from(datesSet).sort();
+        if (sortedDates.length === 0) {
+            container.innerHTML = `
+                <div class="chart-no-data">
+                    <div class="no-data-icon">🏷️</div>
+                    <div class="no-data-text">Brak danych kategorii</div>
+                </div>
+            `;
+            return null;
+        }
+
+        // Determine categories
+        const categoriesSet = new Set();
+        Object.values(byDateCat).forEach(catsObj => Object.keys(catsObj).forEach(c => categoriesSet.add(c)));
+        const categories = Array.from(categoriesSet);
+        if (categories.length === 0) {
+            container.innerHTML = `
+                <div class="chart-no-data">
+                    <div class="no-data-icon">🏷️</div>
+                    <div class="no-data-text">Brak kategorii do wyświetlenia</div>
+                </div>
+            `;
+            return null;
+        }
+
+        // Build cumulative accuracy (summary) per category and keep arrays for tooltips
+        const cumByCat = {};
+        categories.forEach(cat => {
+            let cumCorrect = 0;
+            let cumTotal = 0;
+            const acc = [];
+            const corr = [];
+            const tot = [];
+            sortedDates.forEach(date => {
+                const entry = byDateCat[date] && byDateCat[date][cat];
+                if (entry) {
+                    cumCorrect += entry.correct;
+                    cumTotal += entry.total;
+                }
+                if (cumTotal > 0) {
+                    acc.push(Math.round((cumCorrect / cumTotal) * 100));
+                } else {
+                    acc.push(null);
+                }
+                corr.push(cumCorrect);
+                tot.push(cumTotal);
+            });
+            // Forward fill accuracy after first known
+            let last = null;
+            for (let i = 0; i < acc.length; i++) {
+                if (acc[i] == null) acc[i] = last; else last = acc[i];
+            }
+            // Backfill leading nulls with first known value
+            const firstIdx = acc.findIndex(v => v != null);
+            if (firstIdx > 0) {
+                for (let i = 0; i < firstIdx; i++) acc[i] = acc[firstIdx];
+            }
+            cumByCat[cat] = { acc, corr, tot };
+        });
+
+        const datasets = categories.map((cat, idx) => {
+            const color = this.subjectColors[idx % this.subjectColors.length];
+            return {
+                label: cat,
+                data: cumByCat[cat].acc,
+                borderColor: color,
+                backgroundColor: color + '20',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.4,
+                pointRadius: 3
+            };
+        });
+
+        // Tooltip needs access to cumulative arrays
+        const getCumInfo = (label, i) => {
+            const s = cumByCat[label];
+            if (!s) return null;
+            return { acc: s.acc[i], correct: s.corr[i], total: s.tot[i] };
+        };
+
+        // Create controls + canvas
+container.innerHTML = `
+            <div class="category-chart-controls" id="${containerId}-controls"></div>
+            <canvas id="${containerId}-canvas"></canvas>
+        `;
+        const controls = document.getElementById(containerId + '-controls');
+        const ctx = document.getElementById(containerId + '-canvas');
+        const config = {
+            type: 'line',
+            data: {
+                labels: sortedDates.map(d => new Date(d).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' })),
+                datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Dokładność kategorii w czasie' },
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const info = getCumInfo(ctx.dataset.label, ctx.dataIndex);
+                                if (!info) return `${ctx.dataset.label}: ${ctx.parsed.y}%`;
+                                return `${ctx.dataset.label}: ${info.acc}% ( ${info.correct}/${info.total} )`;
+                            }
+                        }
+                    }
+                },
+                interaction: { intersect: false, mode: 'nearest' },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: (v) => v + '%' },
+                        title: { display: true, text: 'Dokładność (%)' }
+                    }
+                }
+            }
+        };
+        const chart = new Chart(ctx, config);
+        this.charts[containerId] = chart;
+
+        // Build checkbox controls with persistence and top-N filter
+        if (controls) {
+            const visibilityStore = (window.chartVisibilityState = window.chartVisibilityState || {});
+            const storeKey = containerId;
+            const saved = visibilityStore[storeKey] || { hidden: {}, top: 'all' };
+
+            // Compute latest accuracy per category for top-N feature
+            const latestAccuracies = categories.map((cat, idx) => {
+                const data = chart.data.datasets[idx]?.data || [];
+                let last = null;
+                for (let i = data.length - 1; i >= 0; i--) {
+                    const v = data[i];
+                    if (v != null) { last = v; break; }
+                }
+                return { idx, cat, value: last ?? -1 };
+            });
+
+            const toggleAllId = `${containerId}-toggle-all`;
+            const hideAllId = `${containerId}-hide-all`;
+            const topSelectId = `${containerId}-top-select`;
+
+            let controlsHTML = `
+                <div class="controls-row">
+                    <label class="control-item">
+                        <input type="checkbox" id="${toggleAllId}">
+                        Pokaż wszystkie
+                    </label>
+                    <button type="button" class="btn-mini" id="${hideAllId}">Ukryj wszystkie</button>
+                    <div class="control-item">
+                        Pokaż top:
+                        <select id="${topSelectId}" class="control-select">
+                            <option value="all">Wszystkie</option>
+                            <option value="3">3</option>
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="controls-list">
+            `;
+
+            categories.forEach((cat, idx) => {
+                const cbId = `${containerId}-cat-${idx}`;
+                const color = this.subjectColors[idx % this.subjectColors.length];
+                controlsHTML += `
+                    <label class="control-item">
+                        <span class="color-badge" style="background:${color}"></span>
+                        <input type="checkbox" data-dataset-index="${idx}" id="${cbId}">
+                        ${cat}
+                    </label>
+                `;
+            });
+            controlsHTML += '</div>';
+            controls.innerHTML = controlsHTML;
+
+            const toggleAll = document.getElementById(toggleAllId);
+            const hideAllBtn = document.getElementById(hideAllId);
+            const topSelect = document.getElementById(topSelectId);
+            const itemCheckboxes = controls.querySelectorAll('input[data-dataset-index]');
+
+            // Restore saved state
+            const applySavedVisibility = () => {
+                let allChecked = true;
+                itemCheckboxes.forEach(cb => {
+                    const index = parseInt(cb.dataset.datasetIndex, 10);
+                    const cat = categories[index];
+                    const hidden = saved.hidden[cat] === true;
+                    cb.checked = !hidden;
+                    if (chart.data.datasets[index]) {
+                        chart.data.datasets[index].hidden = hidden;
+                    }
+                    if (hidden) allChecked = false;
+                });
+                toggleAll.checked = allChecked;
+                if (saved.top) {
+                    topSelect.value = String(saved.top);
+                }
+                chart.update();
+            };
+
+            // Save state helper
+            const saveState = () => {
+                const hidden = {};
+                itemCheckboxes.forEach(cb => {
+                    const index = parseInt(cb.dataset.datasetIndex, 10);
+                    const cat = categories[index];
+                    hidden[cat] = !cb.checked;
+                });
+                visibilityStore[storeKey] = { hidden, top: topSelect.value };
+            };
+
+            // Item toggles
+            itemCheckboxes.forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const index = parseInt(e.target.dataset.datasetIndex, 10);
+                    const checked = e.target.checked;
+                    if (chart.data.datasets[index]) {
+                        chart.data.datasets[index].hidden = !checked;
+                        chart.update();
+                    }
+                    // Update toggle-all state
+                    const allChecked = Array.from(itemCheckboxes).every(x => x.checked);
+                    toggleAll.checked = allChecked;
+                    // Reset top select to 'all' because manual toggles override top-N filter
+                    topSelect.value = 'all';
+                    saveState();
+                });
+            });
+
+            // Toggle all
+            if (toggleAll) {
+                toggleAll.addEventListener('change', (e) => {
+                    const checked = e.target.checked;
+                    itemCheckboxes.forEach(cb => {
+                        cb.checked = checked;
+                        const index = parseInt(cb.dataset.datasetIndex, 10);
+                        if (chart.data.datasets[index]) {
+                            chart.data.datasets[index].hidden = !checked;
+                        }
+                    });
+                    // Reset top select to 'all'
+                    topSelect.value = 'all';
+                    chart.update();
+                    saveState();
+                });
+            }
+
+            // Hide all
+            if (hideAllBtn) {
+                hideAllBtn.addEventListener('click', () => {
+                    itemCheckboxes.forEach(cb => {
+                        cb.checked = false;
+                        const index = parseInt(cb.dataset.datasetIndex, 10);
+                        if (chart.data.datasets[index]) {
+                            chart.data.datasets[index].hidden = true;
+                        }
+                    });
+                    toggleAll.checked = false;
+                    topSelect.value = 'all';
+                    chart.update();
+                    saveState();
+                });
+            }
+
+            // Top-N change
+            if (topSelect) {
+                topSelect.addEventListener('change', () => {
+                    const val = topSelect.value;
+                    if (val === 'all') {
+                        itemCheckboxes.forEach(cb => {
+                            cb.checked = true;
+                            const index = parseInt(cb.dataset.datasetIndex, 10);
+                            if (chart.data.datasets[index]) chart.data.datasets[index].hidden = false;
+                        });
+                        toggleAll.checked = true;
+                        chart.update();
+                        saveState();
+                        return;
+                    }
+                    const N = parseInt(val, 10);
+                    // Determine top N by latest accuracy
+                    const ranked = latestAccuracies
+                        .slice()
+                        .sort((a, b) => (b.value ?? -1) - (a.value ?? -1))
+                        .slice(0, N)
+                        .map(r => r.idx);
+                    itemCheckboxes.forEach(cb => {
+                        const index = parseInt(cb.dataset.datasetIndex, 10);
+                        const inTop = ranked.includes(index);
+                        cb.checked = inTop;
+                        if (chart.data.datasets[index]) chart.data.datasets[index].hidden = !inTop;
+                    });
+                    toggleAll.checked = ranked.length === itemCheckboxes.length;
+                    chart.update();
+                    saveState();
+                });
+            }
+
+            // Initial state
+            // Default all visible if no saved state exists
+            itemCheckboxes.forEach(cb => { cb.checked = true; });
+            toggleAll.checked = true;
+            applySavedVisibility();
+        }
+
+        return chart;
+    }
+
+    /**
      * Process task data for time-series charts
      */
     processTimeSeriesData(subjectAnalytics) {
@@ -98,7 +655,7 @@ class ChartsManager {
             this.charts[containerId].destroy();
         }
 
-        // Create canvas
+        // Create canvas only
         container.innerHTML = '<canvas id="' + containerId + '-canvas"></canvas>';
         const canvas = document.getElementById(containerId + '-canvas');
         
@@ -215,6 +772,8 @@ class ChartsManager {
 
         const chart = new Chart(canvas, config);
         this.charts[containerId] = chart;
+
+        // Remove any orphaned controls handling in this chart (progress chart doesn't use category filters)
         
         return chart;
     }

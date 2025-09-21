@@ -10,12 +10,13 @@
     <link rel="stylesheet" href="css/management-styles.css">
     <link rel="stylesheet" href="css/study-session.css">
     <link rel="stylesheet" href="css/task-analysis-forms.css">
-    <link rel="stylesheet" href="css/enhanced-analytics.css">
+    <link rel="stylesheet" href="css/dashboard.css">
     <!-- Dark theme override must be last among CSS to take precedence -->
     <link rel="stylesheet" href="css/theme-dark.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
 </head>
 <body class="theme-dark">
     <div class="container">
@@ -45,9 +46,9 @@
                 <div class="nav-content">
                     <!-- Main Section -->
                     <div class="nav-section">
-                        <button type="button" class="nav-item active" data-target="main">
+                        <button type="button" class="nav-item active" data-target="dashboard">
                             <span class="nav-icon">🏠</span>
-                            <span class="nav-label">Main</span>
+                            <span class="nav-label">Dashboard</span>
                         </button>
                     </div>
                     
@@ -65,15 +66,16 @@
                             <span class="nav-section-title">Data Analysis</span>
                             <span class="nav-section-icon">📊</span>
                         </div>
+                        <!-- Keep layout simple: a small Summary button, then the subjects list below -->
+                        <button type="button" class="nav-subitem" data-target="analytics" data-summary="true" title="All subjects summary" style="margin-left:16px;">
+                            <span class="nav-icon">📊</span>
+                            <span class="nav-label">Summary</span>
+                        </button>
                         <div class="nav-subsection" id="subjects-nav-list">
                             <div class="nav-loading">
                                 <span class="loading-text">Loading subjects...</span>
                             </div>
                         </div>
-                        <button type="button" class="nav-item" data-target="enhanced-analytics">
-                            <span class="nav-icon">🚀</span>
-                            <span class="nav-label">Advanced Analytics</span>
-                        </button>
                     </div>
                     
                     <!-- Data Entry Section -->
@@ -104,6 +106,110 @@
         <main class="main-content">
             <!-- Message container for success/error messages -->
             <div id="message-container" class="message-container" style="display: none;"></div>
+
+            <!-- Dashboard Container (Default View) -->
+            <section id="dashboard-container" class="dashboard-container" style="display: block; visibility: visible; opacity: 1;">
+                <div class="dashboard-header">
+                    <div class="dashboard-titles">
+                        <h1 class="dashboard-title">🏠 Dashboard</h1>
+                        <p class="dashboard-subtitle">Szybki przegląd postępów i skróty do akcji</p>
+                    </div>
+                    <div class="dashboard-right">
+                        <div class="current-date" id="current-date"></div>
+                        <button id="refresh-dashboard" class="btn btn-outline">🔄 Odśwież dane</button>
+                    </div>
+                </div>
+
+                <!-- Info cards grid -->
+                <div class="dashboard-grid">
+                    <div class="info-card">
+                        <div class="info-card-title">Przedmioty</div>
+                        <div class="info-card-value" id="stat-total-subjects">0</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-title">Kategorie</div>
+                        <div class="info-card-value" id="stat-total-categories">0</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-title">Zadania</div>
+                        <div class="info-card-value" id="stat-total-tasks">0</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-title">Dokładność</div>
+                        <div class="info-card-value" id="stat-accuracy-overall">0%</div>
+                    </div>
+                </div>
+
+                <!-- Quick actions -->
+                <div class="quick-actions">
+                    <button type="button" class="quick-action-btn nav-subitem" data-target="add-tasks">📝 Dodaj Zadanie</button>
+                    <button type="button" class="quick-action-btn nav-item" data-target="study">🎯 Start Sesji</button>
+                    <button type="button" class="quick-action-btn nav-subitem" data-target="analytics" data-summary="true">📊 Podsumowanie</button>
+                    <button type="button" class="quick-action-btn nav-subitem" data-target="add-subjects">📚 Przedmioty</button>
+                    <button type="button" class="quick-action-btn nav-subitem" data-target="add-categories">🏷️ Kategorie</button>
+                </div>
+
+                <!-- Subject tabs + categories content -->
+                <div class="dashboard-panels">
+                    <div id="subject-tabs" class="subject-tabs"></div>
+                    <div id="categories-content" class="categories-content"></div>
+                </div>
+
+                <!-- Subject Progress (all subjects) -->
+                <section id="subject-progress-section" class="subject-progress-section">
+                    <h2 class="section-h2">📈 Postęp według przedmiotów</h2>
+                    <p class="section-sub">Ostatnie 30 dni — każda linia to jeden przedmiot</p>
+                    <div class="chart-controls">
+                        <div class="pill-group" id="subject-filter-pills"></div>
+                        <div class="pill-group" id="timeframe-pills">
+                            <button type="button" data-range="7"  class="pill">7d</button>
+                            <button type="button" data-range="30" class="pill active">30d</button>
+                            <button type="button" data-range="90" class="pill">90d</button>
+                            <button type="button" data-range="all" class="pill">Wszystko</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper" style="min-height: 360px;">
+                        <canvas id="subject-progress-chart"></canvas>
+                    </div>
+                    <div class="chart-actions" style="display:flex; gap:8px; margin-top:8px;">
+                        <button type="button" id="export-csv" class="btn btn-secondary">⬇️ Export CSV</button>
+                        <button type="button" id="export-json" class="btn btn-secondary">⬇️ Export JSON</button>
+                        <button type="button" id="copy-link-progress" class="btn btn-outline">🔗 Kopiuj link</button>
+                    </div>
+                </section>
+
+                <!-- Time Analysis (KPIs) -->
+                <section id="time-analysis-section" class="time-analysis-overview">
+                    <h2 class="section-h2">⏱️ Analiza czasu</h2>
+                    <div class="kpi-grid-3" id="time-analysis-kpis"></div>
+                    <div class="subject-mini-cards" id="subject-mini-cards"></div>
+                </section>
+
+                <!-- Multiple Countdowns -->
+                <section id="countdowns-section" class="countdowns-section">
+                    <h2 class="section-h2">⏳ Odliczanie do egzaminów</h2>
+                    <div id="countdowns-grid" class="countdowns-grid"></div>
+                </section>
+
+                <!-- Daily Activity -->
+                <section id="daily-activity-section" class="daily-activity-section">
+                    <h2 class="section-h2">🗓️ Aktywność dzienna wg przedmiotów</h2>
+                    <div id="daily-subject-list" class="daily-subject-list"></div>
+                </section>
+
+                <!-- Weekly Goal -->
+                <section id="weekly-goal-section" class="weekly-goal-section">
+                    <h2 class="section-h2">🎯 Cel tygodniowy</h2>
+                    <div class="goal-wrap">
+                        <div class="goal-ring" id="goal-ring"><span class="goal-val" id="goal-val">0%</span></div>
+                        <div class="goal-meta">
+                            <div class="goal-title">Zadania w tym tygodniu</div>
+                            <div class="goal-desc"><span id="goal-progress">0</span>/<span id="goal-target">0</span> zadań</div>
+                            <div class="goal-status" id="goal-status">—</div>
+                        </div>
+                    </div>
+                </section>
+            </section>
 
             <!-- Unified Form Container with Tabs -->
             <div class="unified-form-container" id="main-form-container" style="display: block;">
@@ -471,6 +577,12 @@
                     
                     <!-- Right Panel: Detailed Analytics -->
                     <div class="analytics-right-panel">
+                        <div class="form-tabs analytics-tabs" id="analytics-top-tabs">
+                            <button type="button" class="form-tab" id="summary-tab-btn" data-tab="summary">
+                                <span class="tab-icon">📊</span>
+                                Podsumowanie
+                            </button>
+                        </div>
                         <div class="analytics-content" id="analytics-content">
                             <div class="welcome-state" id="welcome-state">
                                 <div class="welcome-illustration">👈</div>
@@ -746,215 +858,6 @@
             </div>
 
             <!-- Enhanced Analytics Dashboard Container -->
-            <div class="enhanced-analytics-dashboard" id="enhanced-analytics-container" style="display: none;">
-                <!-- Enhanced Analytics Header -->
-                <div class="enhanced-analytics-header">
-                    <h1 class="enhanced-analytics-title">📊 Zaawansowana Analityka Nauki</h1>
-                    <p class="enhanced-analytics-subtitle">Kompleksowa analiza postępów, systematyczności i wydajności nauki</p>
-                </div>
-                
-                <!-- Analytics Tabs -->
-                <div class="analytics-tabs">
-                    <button class="analytics-tab active" data-tab="overview">
-                        <span class="analytics-tab-icon">📈</span>
-                        Przegląd
-                    </button>
-                    <button class="analytics-tab" data-tab="performance">
-                        <span class="analytics-tab-icon">🎯</span>
-                        Skuteczność w czasie
-                    </button>
-                    <button class="analytics-tab" data-tab="consistency">
-                        <span class="analytics-tab-icon">🔥</span>
-                        Systematyczność
-                    </button>
-                    <button class="analytics-tab" data-tab="time-analysis">
-                        <span class="analytics-tab-icon">🕐</span>
-                        Analiza czasu
-                    </button>
-                    <button class="analytics-tab" data-tab="subjects">
-                        <span class="analytics-tab-icon">📚</span>
-                        Przedmioty
-                    </button>
-                    <button class="analytics-tab" data-tab="locations">
-                        <span class="analytics-tab-icon">📍</span>
-                        Lokalizacje
-                    </button>
-                    <button class="analytics-tab" data-tab="progress">
-                        <span class="analytics-tab-icon">🏆</span>
-                        Postępy
-                    </button>
-                </div>
-
-                <!-- Loading State -->
-                <div id="enhanced-analytics-loading" class="loading-container" style="display: none;">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">Ładowanie analityki...</div>
-                </div>
-
-                <!-- Overview Tab -->
-                <div class="analytics-tab-content active" id="overview-tab">
-                    <!-- Key Insights -->
-                    <div class="analytics-insights" id="key-insights">
-                        <!-- Insights will be populated by JavaScript -->
-                    </div>
-                    
-                    <!-- Enhanced Metrics Grid -->
-                    <div class="enhanced-metrics-grid" id="overview-metrics">
-                        <!-- Metrics cards will be populated by JavaScript -->
-                    </div>
-                    
-                    <!-- Quick Charts Section -->
-                    <div class="enhanced-chart-section">
-                        <div class="enhanced-chart-header">
-                            <h2 class="enhanced-chart-title">
-                                📊 Przegląd ostatnich 30 dni
-                            </h2>
-                        </div>
-                        <div class="enhanced-chart-container" id="overview-performance-chart">
-                            <!-- Chart will be rendered here -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Performance Over Time Tab -->
-                <div class="analytics-tab-content" id="performance-tab">
-                    <div class="enhanced-chart-section">
-                        <div class="enhanced-chart-header">
-                            <h2 class="enhanced-chart-title">
-                                📈 Skuteczność w czasie
-                            </h2>
-                            <div class="enhanced-chart-controls">
-                                <button class="chart-control-btn active" data-period="WEEK">Tydzień</button>
-                                <button class="chart-control-btn" data-period="MONTH">Miesiąc</button>
-                                <button class="chart-control-btn" data-period="QUARTER">3 miesiące</button>
-                                <button class="chart-control-btn" data-period="ALL">Wszystko</button>
-                            </div>
-                        </div>
-                        <div class="enhanced-chart-container" id="performance-trend-chart">
-                            <!-- Performance trend chart -->
-                        </div>
-                    </div>
-
-                    <!-- Performance Summary Cards -->
-                    <div class="enhanced-metrics-grid" id="performance-metrics">
-                        <!-- Performance metrics cards -->
-                    </div>
-                </div>
-
-                <!-- Study Consistency Tab -->
-                <div class="analytics-tab-content" id="consistency-tab">
-                    <div class="enhanced-chart-section">
-                        <div class="enhanced-chart-header">
-                            <h2 class="enhanced-chart-title">
-                                🔥 Kalendarz aktywności
-                            </h2>
-                        </div>
-                        <div class="enhanced-chart-container" id="consistency-heatmap">
-                            <!-- Consistency heatmap -->
-                        </div>
-                    </div>
-
-                    <!-- Consistency Metrics -->
-                    <div class="enhanced-metrics-grid" id="consistency-metrics">
-                        <!-- Consistency metrics cards -->
-                    </div>
-                </div>
-
-                <!-- Time of Day Analysis Tab -->
-                <div class="analytics-tab-content" id="time-analysis-tab">
-                    <div class="enhanced-chart-section">
-                        <div class="enhanced-chart-header">
-                            <h2 class="enhanced-chart-title">
-                                🕐 Skuteczność według pory dnia
-                            </h2>
-                        </div>
-                        <div class="enhanced-chart-container" id="time-of-day-chart">
-                            <!-- Time of day chart -->
-                        </div>
-                    </div>
-
-                    <!-- Time Period Cards -->
-                    <div class="time-period-grid" id="time-period-cards">
-                        <!-- Time period cards -->
-                    </div>
-
-                    <!-- Recommendations -->
-                    <div class="analytics-insights" id="time-recommendations">
-                        <!-- Time-based recommendations -->
-                    </div>
-                </div>
-
-                <!-- Subjects Analysis Tab -->
-                <div class="analytics-tab-content" id="subjects-tab">
-                    <div class="enhanced-chart-section">
-                        <div class="enhanced-chart-header">
-                            <h2 class="enhanced-chart-title">
-                                🎯 Porównanie przedmiotów
-                            </h2>
-                        </div>
-                        <div class="enhanced-chart-container" id="subjects-radar-chart">
-                            <!-- Subjects radar chart -->
-                        </div>
-                    </div>
-
-                    <!-- Subject Analysis Cards -->
-                    <div class="enhanced-metrics-grid" id="subjects-metrics">
-                        <!-- Subject metrics cards -->
-                    </div>
-                </div>
-
-                <!-- Locations Analysis Tab -->
-                <div class="analytics-tab-content" id="locations-tab">
-                    <div class="enhanced-chart-section">
-                        <div class="enhanced-chart-header">
-                            <h2 class="enhanced-chart-title">
-                                📍 Skuteczność według lokalizacji
-                            </h2>
-                        </div>
-                        <div class="enhanced-chart-container" id="location-impact-chart">
-                            <!-- Location impact chart -->
-                        </div>
-                    </div>
-
-                    <!-- Location Comparison -->
-                    <div class="location-comparison" id="location-cards">
-                        <!-- Location cards -->
-                    </div>
-                </div>
-
-                <!-- Progress Tracking Tab -->
-                <div class="analytics-tab-content" id="progress-tab">
-                    <!-- Progress Indicators -->
-                    <div class="progress-section" id="progress-indicators">
-                        <!-- Progress cards -->
-                    </div>
-
-                    <!-- Achievements -->
-                    <div class="analytics-insights" id="achievements-section">
-                        <!-- Achievements -->
-                    </div>
-
-                    <!-- Progress Charts -->
-                    <div class="enhanced-chart-section">
-                        <div class="enhanced-chart-header">
-                            <h2 class="enhanced-chart-title">
-                                📊 Postęp w czasie
-                            </h2>
-                        </div>
-                        <div class="enhanced-chart-container" id="progress-over-time-chart">
-                            <!-- Progress over time chart -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Error State -->
-                <div id="enhanced-analytics-error" class="error-container" style="display: none;">
-                    <div class="error-icon">❌</div>
-                    <div class="error-title">Błąd ładowania analityki</div>
-                    <div class="error-message">Sprawdź połączenie internetowe i spróbuj ponownie.</div>
-                    <button onclick="window.enhancedAnalyticsApp?.loadAnalyticsData()" class="error-retry-btn">Spróbuj ponownie</button>
-                </div>
-            </div>
 
             <!-- Study Session Modal -->
             <div class="modal-overlay" id="study-analysis-modal" style="display: none;">
@@ -1185,8 +1088,17 @@
       if (window.Chart) {
         Chart.defaults.color = '#e6e8ee';
         Chart.defaults.borderColor = 'rgba(148,163,184,0.25)';
+        Chart.defaults.font = Chart.defaults.font || {};
+        Chart.defaults.font.family = 'Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+        Chart.defaults.elements = Chart.defaults.elements || {};
+        Chart.defaults.elements.line = Chart.defaults.elements.line || {};
+        Chart.defaults.elements.point = Chart.defaults.elements.point || {};
+        Chart.defaults.elements.line.borderWidth = 2;
+        Chart.defaults.elements.point.radius = 2;
+        Chart.defaults.elements.point.hoverRadius = 4;
         Chart.defaults.plugins = Chart.defaults.plugins || {};
         Chart.defaults.plugins.legend = Chart.defaults.plugins.legend || {};
+        Chart.defaults.plugins.legend.position = 'bottom';
         Chart.defaults.plugins.legend.labels = Chart.defaults.plugins.legend.labels || {};
         Chart.defaults.plugins.legend.labels.color = '#e6e8ee';
         Chart.defaults.scale = Chart.defaults.scale || {};
@@ -1194,6 +1106,8 @@
         Chart.defaults.scale.grid.color = 'rgba(148,163,184,0.15)';
         Chart.defaults.scale.ticks = Chart.defaults.scale.ticks || {};
         Chart.defaults.scale.ticks.color = '#e6e8ee';
+        Chart.defaults.animation = Chart.defaults.animation || {};
+        Chart.defaults.animation.duration = 250;
       }
     </script>
     
@@ -1202,804 +1116,98 @@
     <script src="js/googleSheetsDebugger.js"></script>
     <script src="js/loadingManager.js"></script>
     <script src="js/googleSheetsAPI-v2.js"></script>
+    <script src="js/dashboard.js"></script>
     <script src="js/bootstrap.js"></script>
     <script src="js/leftNavigation.js"></script>
     <!-- DISABLED: StudyTrackingManager to prevent duplicate sessions -->
     <!-- <script src="js/studyTrackingManager.js"></script> -->
     <script src="js/analyticsManager.js"></script>
-    <script src="js/enhancedAnalytics.js"></script>
+    <script src="js/subjectTimeAnalysis.js"></script>
     <script src="js/chartsManager.js"></script>
     <script src="js/managementForms.js"></script>
     <script src="js/app-simplified.js"></script>
+    <script src="js/multiCountdown.js"></script>
+    <script src="js/dashboardEnhancements.js"></script>
     
     <!-- App initialization -->
     <script>
         // Global coordination object (StudyTrackingManager disabled - using SimplifiedFormApp only)
         window.systemCoordination = {
-            studySessionActive: false,  // Not used since StudyTrackingManager is disabled
-            isSubmittingStudyData: false  // Not used since StudyTrackingManager is disabled
+            studySessionActive: false,
+            isSubmittingStudyData: false
         };
         
-        // System Zarządzania Danymi - Ready for operation with Left Navigation
-        console.log('📊 System Zarządzania Danymi - Initialized with Left Navigation');
-        console.log('💡 Use enableGSDebug() to track Google Sheets data retrieval');
-        console.log('🎆 StudyTrackingManager disabled - using SimplifiedFormApp only');
-        console.log('📚 Study Sessions ready');
-        console.log('🏠 Left Navigation System active');
-        
-        // Initialize main form container as default view
-        document.addEventListener('DOMContentLoaded', () => {
-            // Ensure main form container is visible by default
-            const mainContainer = document.getElementById('main-form-container');
-            if (mainContainer) {
-                mainContainer.style.display = 'block';
-                mainContainer.style.visibility = 'visible';
-                mainContainer.style.opacity = '1';
-            }
-            
-            // Hide other containers initially
-            const otherContainers = [
-                'study-container',
-                'analytics-container', 
-                'enhanced-analytics-container'
-            ];
-            
-            otherContainers.forEach(containerId => {
-                const container = document.getElementById(containerId);
-                if (container) {
-                    container.style.display = 'none';
-                    container.style.visibility = 'hidden';
-                    container.style.opacity = '0';
-                }
-            });
-        });
-        
-        // Enhanced Analytics Initialization
-        window.initializeEnhancedAnalytics = function() {
-            if (window.enhancedAnalyticsApp) {
-                console.log('Enhanced Analytics already initialized');
-                return;
-            }
-            
-            console.log('🚀 Initializing Enhanced Analytics App...');
-            
-            try {
-                // Create Enhanced Analytics App
-                window.enhancedAnalyticsApp = new EnhancedAnalyticsApp();
-                console.log('✅ Enhanced Analytics App initialized successfully');
-            } catch (error) {
-                console.error('❌ Error initializing Enhanced Analytics App:', error);
-            }
-        };
-        
-        // Enhanced Analytics Application Class
-        class EnhancedAnalyticsApp {
-            constructor() {
-                this.config = CONFIG;
-                this.googleSheetsAPI = null;
-                this.enhancedAnalytics = null;
-                this.chartsManager = null;
-                this.currentTab = 'overview';
-                this.analyticsData = null;
-                
-                this.init();
-            }
-            
-            async init() {
-                console.log('🚀 Initializing Enhanced Analytics App...');
-                
-                try {
-                    // Initialize Google Sheets API
-                    this.googleSheetsAPI = new GoogleSheetsAPIv2(this.config);
-                    
-                    // Initialize Enhanced Analytics
-                    this.enhancedAnalytics = new EnhancedAnalytics(this.config, this.googleSheetsAPI);
-                    
-                    // Initialize Charts Manager
-                    this.chartsManager = new ChartsManager(this.enhancedAnalytics);
-                    
-                    // Setup event listeners
-                    this.setupEventListeners();
-                    
-                    // Load analytics data
-                    await this.loadAnalyticsData();
-                    
-                    console.log('✅ Enhanced Analytics App initialized');
-                } catch (error) {
-                    console.error('❌ Error initializing Enhanced Analytics App:', error);
-                    this.showError('Błąd inicjalizacji aplikacji analityki');
-                }
-            }
-            
-            setupEventListeners() {
-                // Tab switching
-                const tabButtons = document.querySelectorAll('.analytics-tab');
-                tabButtons.forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const tabName = e.target.getAttribute('data-tab');
-                        if (tabName) {
-                            this.switchTab(tabName);
-                        }
-                    });
-                });
-                
-                // Chart control buttons
-                document.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('chart-control-btn')) {
-                        this.handleChartControl(e.target);
-                    }
-                });
-            }
-            
-            async loadAnalyticsData() {
-                this.showLoading(true);
-                
-                try {
-                    const result = await this.enhancedAnalytics.loadAnalyticsData();
-                    
-                    if (result.success) {
-                        this.analyticsData = result.data;
-                        this.renderAllTabs();
-                        this.showLoading(false);
-                    } else {
-                        throw new Error(result.error || 'Failed to load analytics data');
-                    }
-                } catch (error) {
-                    console.error('❌ Error loading analytics data:', error);
-                    this.showError('Błąd ładowania danych analityki');
-                    this.showLoading(false);
-                }
-            }
-            
-            switchTab(tabName) {
-                // Update active tab button
-                document.querySelectorAll('.analytics-tab').forEach(tab => {
-                    tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
-                });
-                
-                // Update active tab content
-                document.querySelectorAll('.analytics-tab-content').forEach(content => {
-                    content.classList.toggle('active', content.id === tabName + '-tab');
-                });
-                
-                this.currentTab = tabName;
-                
-                // Load tab-specific content if needed
-                if (this.analyticsData) {
-                    this.renderTabContent(tabName);
-                }
-            }
-            
-            renderAllTabs() {
-                if (!this.analyticsData) return;
-                
-                this.renderOverviewTab();
-                this.renderPerformanceTab();
-                this.renderConsistencyTab();
-                this.renderTimeAnalysisTab();
-                this.renderSubjectsTab();
-                this.renderLocationsTab();
-                this.renderProgressTab();
-            }
-            
-            renderTabContent(tabName) {
-                if (!this.analyticsData) return;
-                
-                switch(tabName) {
-                    case 'overview':
-                        this.renderOverviewTab();
-                        break;
-                    case 'performance':
-                        this.renderPerformanceTab();
-                        break;
-                    case 'consistency':
-                        this.renderConsistencyTab();
-                        break;
-                    case 'time-analysis':
-                        this.renderTimeAnalysisTab();
-                        break;
-                    case 'subjects':
-                        this.renderSubjectsTab();
-                        break;
-                    case 'locations':
-                        this.renderLocationsTab();
-                        break;
-                    case 'progress':
-                        this.renderProgressTab();
-                        break;
-                }
-            }
-            
-            renderOverviewTab() {
-                const report = this.enhancedAnalytics.generateReport();
-                
-                // Render key insights
-                this.renderInsights(report.insights, 'key-insights');
-                
-                // Render overview metrics
-                this.renderOverviewMetrics();
-                
-                // Render overview chart with actual data
-                if (this.analyticsData.performanceOverTime) {
-                    this.chartsManager.createPerformanceOverTimeChart(
-                        this.analyticsData.performanceOverTime, 
-                        'overview-performance-chart'
-                    );
-                }
-            }
-            
-            renderPerformanceTab() {
-                if (this.analyticsData.performanceOverTime) {
-                    this.chartsManager.createPerformanceOverTimeChart(
-                        this.analyticsData.performanceOverTime, 
-                        'performance-trend-chart'
-                    );
-                }
-                this.renderPerformanceMetrics();
-            }
-            
-            renderConsistencyTab() {
-                if (this.analyticsData.studyConsistency) {
-                    this.chartsManager.createConsistencyHeatmapChart(
-                        this.analyticsData.studyConsistency, 
-                        'consistency-heatmap'
-                    );
-                }
-                this.renderConsistencyMetrics();
-            }
-            
-            renderTimeAnalysisTab() {
-                if (this.analyticsData.timeOfDayAnalysis) {
-                    this.chartsManager.createTimeOfDayChart(
-                        this.analyticsData.timeOfDayAnalysis, 
-                        'time-of-day-chart'
-                    );
-                }
-                this.renderTimePeriodCards();
-                this.renderTimeRecommendations();
-            }
-            
-            renderSubjectsTab() {
-                if (this.analyticsData.subjectAnalysis) {
-                    this.chartsManager.createSubjectRadarChart(
-                        this.analyticsData.subjectAnalysis, 
-                        'subjects-radar-chart'
-                    );
-                }
-                this.renderSubjectMetrics();
-            }
-            
-            renderLocationsTab() {
-                if (this.analyticsData.locationAnalysis) {
-                    this.chartsManager.createLocationImpactChart(
-                        this.analyticsData.locationAnalysis, 
-                        'location-impact-chart'
-                    );
-                }
-                this.renderLocationCards();
-            }
-            
-            renderProgressTab() {
-                this.renderProgressIndicators();
-                this.renderAchievements();
-                if (this.analyticsData.progressTracking) {
-                    this.chartsManager.createProgressOverTimeChart(
-                        this.analyticsData.progressTracking, 
-                        'progress-over-time-chart'
-                    );
-                }
-            }
-            
-            renderPlaceholderChart(containerId, title) {
-                const container = document.getElementById(containerId);
-                if (container) {
-                    container.innerHTML = `
-                        <div class="chart-placeholder">
-                            <div class="chart-placeholder-icon">📊</div>
-                            <div class="chart-placeholder-text">${title} - wykres będzie dostępny wkrótce</div>
-                        </div>
-                    `;
-                }
-            }
-            
-            // Helper methods for rendering specific components
-            renderInsights(insights, containerId) {
-                const container = document.getElementById(containerId);
-                if (!container || !insights) return;
-                
-                container.innerHTML = insights.map(insight => `
-                    <div class="insight-card ${insight.type}">
-                        <div class="insight-header">
-                            <span class="insight-emoji">${insight.emoji}</span>
-                            <h3 class="insight-title">${insight.title}</h3>
-                        </div>
-                        <p class="insight-message">${insight.message}</p>
-                    </div>
-                `).join('');
-            }
-            
-            renderOverviewMetrics() {
-                const container = document.getElementById('overview-metrics');
-                if (!container) return;
-                
-                const report = this.enhancedAnalytics.generateReport();
-                const summary = report.summary;
-                
-                container.innerHTML = `
-                    <div class="enhanced-metric-card" style="--metric-color: #10b981;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">📝</div>
-                            <span class="metric-card-title">Wszystkich zadań</span>
-                        </div>
-                        <div class="metric-card-value">${summary.totalTasks}</div>
-                        <div class="metric-card-subtitle">zadania wykonane</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #3b82f6;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">🎯</div>
-                            <span class="metric-card-title">Skuteczność</span>
-                        </div>
-                        <div class="metric-card-value">${summary.overallAccuracy}%</div>
-                        <div class="metric-card-subtitle">średnia dokładność</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #f59e0b;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">📅</div>
-                            <span class="metric-card-title">Dni nauki</span>
-                        </div>
-                        <div class="metric-card-value">${summary.studyDays}</div>
-                        <div class="metric-card-subtitle">unikalnych dni</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #ef4444;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">🔥</div>
-                            <span class="metric-card-title">Aktualna passa</span>
-                        </div>
-                        <div class="metric-card-value">${summary.currentStreak}</div>
-                        <div class="metric-card-subtitle">dni z rzędu</div>
-                    </div>
-                `;
-            }
-            
-            renderPerformanceMetrics() {
-                const container = document.getElementById('performance-metrics');
-                if (!container) return;
-                
-                const perfData = this.analyticsData.performanceOverTime;
-                
-                container.innerHTML = `
-                    <div class="enhanced-metric-card" style="--metric-color: #10b981;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">📈</div>
-                            <span class="metric-card-title">Średnia skuteczność</span>
-                        </div>
-                        <div class="metric-card-value">${perfData.averageAccuracy || 0}%</div>
-                        <div class="metric-card-subtitle">w analizowanym okresie</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #3b82f6;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">📊</div>
-                            <span class="metric-card-title">Najlepszy dzień</span>
-                        </div>
-                        <div class="metric-card-value">${perfData.bestDay ? perfData.bestDay.accuracy : 0}%</div>
-                        <div class="metric-card-subtitle">${perfData.bestDay ? new Date(perfData.bestDay.date).toLocaleDateString('pl-PL') : 'Brak danych'}</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #f59e0b;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">📅</div>
-                            <span class="metric-card-title">Dni nauki</span>
-                        </div>
-                        <div class="metric-card-value">${perfData.totalDays || 0}</div>
-                        <div class="metric-card-subtitle">aktywnych dni</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #ef4444;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">🎯</div>
-                            <span class="metric-card-title">Stabilność</span>
-                        </div>
-                        <div class="metric-card-value">${perfData.consistency || 0}%</div>
-                        <div class="metric-card-subtitle">stałości wyników</div>
-                    </div>
-                `;
-            }
-            
-            renderConsistencyMetrics() {
-                const container = document.getElementById('consistency-metrics');
-                if (!container) return;
-                
-                const consData = this.analyticsData.studyConsistency;
-                
-                container.innerHTML = `
-                    <div class="enhanced-metric-card" style="--metric-color: #ef4444;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">🔥</div>
-                            <span class="metric-card-title">Aktualna passa</span>
-                        </div>
-                        <div class="metric-card-value">${consData.currentStreak || 0}</div>
-                        <div class="metric-card-subtitle">dni z rzędu</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #10b981;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">📊</div>
-                            <span class="metric-card-title">Systematyczność</span>
-                        </div>
-                        <div class="metric-card-value">${Math.round((consData.consistencyScore || 0) * 100)}%</div>
-                        <div class="metric-card-subtitle">regularności nauki</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #3b82f6;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">📅</div>
-                            <span class="metric-card-title">Aktywne dni</span>
-                        </div>
-                        <div class="metric-card-value">${consData.totalActiveDays || 0}</div>
-                        <div class="metric-card-subtitle">ostatnie 90 dni</div>
-                    </div>
-                    
-                    <div class="enhanced-metric-card" style="--metric-color: #f59e0b;">
-                        <div class="metric-card-header">
-                            <div class="metric-card-icon">🏆</div>
-                            <span class="metric-card-title">Najdłuższa passa</span>
-                        </div>
-                        <div class="metric-card-value">${consData.longestStreak || 0}</div>
-                        <div class="metric-card-subtitle">rekordowa passa</div>
-                    </div>
-                `;
-            }
-            
-            renderTimePeriodCards() {
-                const container = document.getElementById('time-period-cards');
-                if (!container || !this.analyticsData.timeOfDayAnalysis) return;
-                
-                const timePeriods = this.analyticsData.timeOfDayAnalysis.timePeriods || {};
-                const periods = Object.keys(timePeriods).filter(period => timePeriods[period].total > 0);
-                
-                if (periods.length === 0) {
-                    container.innerHTML = '<div class="placeholder-text">Brak danych o porach dnia</div>';
-                    return;
-                }
-                
-                const periodsHTML = periods.map(period => {
-                    const data = timePeriods[period];
-                    return `
-                        <div class="time-period-card">
-                            <div class="period-header">
-                                <span class="period-emoji">${data.emoji}</span>
-                                <h3 class="period-title">${data.label}</h3>
-                            </div>
-                            <div class="period-stats">
-                                <div class="period-accuracy">${data.accuracy}%</div>
-                                <div class="period-tasks">${data.correct}/${data.total} zadań</div>
-                            </div>
-                            <div class="period-rating ${this.getAccuracyRating(data.accuracy)}">
-                                ${this.getAccuracyDescription(data.accuracy)}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                container.innerHTML = `<div class="time-period-grid">${periodsHTML}</div>`;
-            }
-            
-            renderTimeRecommendations() {
-                const container = document.getElementById('time-recommendations');
-                if (!container || !this.analyticsData.timeOfDayAnalysis) return;
-                
-                const timePeriods = this.analyticsData.timeOfDayAnalysis.timePeriods || {};
-                const bestPeriod = this.getBestTimePeriod(timePeriods);
-                const worstPeriod = this.getWorstTimePeriod(timePeriods);
-                
-                const recommendations = [];
-                
-                if (bestPeriod) {
-                    recommendations.push({
-                        emoji: '⭐',
-                        type: 'success',
-                        title: 'Najlepsza pora dnia',
-                        message: `Najwyższą skuteczność ${bestPeriod.accuracy}% osiągasz ${bestPeriod.label.toLowerCase()}. Planuj trudniejsze zadania na tę porę.`
-                    });
-                }
-                
-                if (worstPeriod && worstPeriod.accuracy < 70) {
-                    recommendations.push({
-                        emoji: '🔄',
-                        type: 'warning',
-                        title: 'Możesz poprawić',
-                        message: `${worstPeriod.label} twoja skuteczność wynosi ${worstPeriod.accuracy}%. Rozważ krótsze sesje lub łatwiejsze zadania w tej porze.`
-                    });
-                }
-                
-                if (recommendations.length === 0) {
-                    recommendations.push({
-                        emoji: '📊',
-                        type: 'info',
-                        title: 'Kontynuuj naukę',
-                        message: 'Zbierz więcej danych, aby otrzymać spersonalizowane rekomendacje dotyczące por y dnia.'
-                    });
-                }
-                
-                this.renderInsights(recommendations, 'time-recommendations');
-            }
-            
-            renderSubjectMetrics() {
-                const container = document.getElementById('subjects-metrics');
-                if (!container || !this.analyticsData.subjectAnalysis) return;
-                
-                const subjects = this.analyticsData.subjectAnalysis.subjects || {};
-                const subjectNames = Object.keys(subjects).filter(name => subjects[name].performance.total >= 3);
-                
-                if (subjectNames.length === 0) {
-                    container.innerHTML = '<div class="placeholder-text">Dodaj więcej zadań z różnych przedmiotów</div>';
-                    return;
-                }
-                
-                const subjectsHTML = subjectNames.map(name => {
-                    const subject = subjects[name];
-                    const perf = subject.performance;
-                    return `
-                        <div class="enhanced-metric-card" style="--metric-color: ${this.getSubjectColor(name)};">
-                            <div class="metric-card-header">
-                                <div class="metric-card-icon">${subject.icon || '📚'}</div>
-                                <span class="metric-card-title">${name}</span>
-                            </div>
-                            <div class="metric-card-value">${perf.accuracy}%</div>
-                            <div class="metric-card-subtitle">${perf.correct}/${perf.total} poprawnych</div>
-                            <div class="metric-card-trend ${this.getTrendClass(perf.trend)}">
-                                ${this.getTrendIcon(perf.trend)} ${this.getTrendText(perf.trend)}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                container.innerHTML = subjectsHTML;
-            }
-            
-            renderLocationCards() {
-                const container = document.getElementById('location-cards');
-                if (!container || !this.analyticsData.locationAnalysis) return;
-                
-                const locations = this.analyticsData.locationAnalysis.locations || {};
-                const locationNames = Object.keys(locations).filter(name => locations[name].total >= 3);
-                
-                if (locationNames.length === 0) {
-                    container.innerHTML = '<div class="placeholder-text">Dodaj więcej zadań z różnych lokalizacji</div>';
-                    return;
-                }
-                
-                const locationsHTML = locationNames.map(name => {
-                    const location = locations[name];
-                    return `
-                        <div class="location-card">
-                            <div class="location-header">
-                                <span class="location-icon">📍</span>
-                                <h3 class="location-name">${name}</h3>
-                            </div>
-                            <div class="location-stats">
-                                <div class="location-accuracy">${location.accuracy}%</div>
-                                <div class="location-tasks">${location.correct}/${location.total} zadań</div>
-                                <div class="location-subjects">${Object.keys(location.subjects).length} przedmiotów</div>
-                            </div>
-                            <div class="location-rating ${this.getAccuracyRating(location.accuracy)}">
-                                ${this.getLocationRating(location.accuracy)}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                container.innerHTML = `<div class="location-comparison">${locationsHTML}</div>`;
-            }
-            
-            renderProgressIndicators() {
-                const container = document.getElementById('progress-indicators');
-                if (!container || !this.analyticsData.progressTracking) return;
-                
-                const progress = this.analyticsData.progressTracking;
-                const milestones = progress.milestones || [];
-                const streaks = progress.streaks || {};
-                
-                const progressHTML = `
-                    <div class="progress-metrics-grid">
-                        <div class="progress-metric-card">
-                            <div class="progress-icon">🏆</div>
-                            <div class="progress-value">${streaks.current || 0}</div>
-                            <div class="progress-label">Aktualna passa</div>
-                        </div>
-                        <div class="progress-metric-card">
-                            <div class="progress-icon">🔥</div>
-                            <div class="progress-value">${streaks.longest || 0}</div>
-                            <div class="progress-label">Najdłuższa passa</div>
-                        </div>
-                        <div class="progress-metric-card">
-                            <div class="progress-icon">📊</div>
-                            <div class="progress-value">${progress.totalWeeks || 0}</div>
-                            <div class="progress-label">Tygodni nauki</div>
-                        </div>
-                        <div class="progress-metric-card">
-                            <div class="progress-icon">🎆</div>
-                            <div class="progress-value">${milestones.length}</div>
-                            <div class="progress-label">Osiągnięcia</div>
-                        </div>
-                    </div>
-                `;
-                
-                container.innerHTML = progressHTML;
-            }
-            
-            renderAchievements() {
-                const container = document.getElementById('achievements-section');
-                if (!container || !this.analyticsData.progressTracking) return;
-                
-                const milestones = this.analyticsData.progressTracking.milestones || [];
-                const achievements = this.generateAchievements();
-                
-                if (achievements.length === 0) {
-                    container.innerHTML = '<div class="placeholder-text">Kontynuuj naukę, aby odblokować pierwsze osiągnięcie!</div>';
-                    return;
-                }
-                
-                this.renderInsights(achievements, 'achievements-section');
-            }
-            
-            showLoading(show) {
-                const loadingEl = document.getElementById('enhanced-analytics-loading');
-                if (loadingEl) {
-                    loadingEl.style.display = show ? 'block' : 'none';
-                }
-            }
-            
-            showError(message) {
-                const errorEl = document.getElementById('enhanced-analytics-error');
-                if (errorEl) {
-                    errorEl.style.display = 'block';
-                    const messageEl = errorEl.querySelector('.error-message');
-                    if (messageEl) {
-                        messageEl.textContent = message;
-                    }
-                }
-            }
-            
-            handleChartControl(button) {
-                // Handle chart control button clicks
-                const period = button.getAttribute('data-period');
-                console.log('Chart control clicked:', period);
-                
-                // Update active button
-                button.parentElement.querySelectorAll('.chart-control-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                button.classList.add('active');
-                
-                // Update chart based on period (placeholder for now)
-                console.log('Chart would be updated for period:', period);
-            }
-            
-            // Helper methods for data visualization
-            getAccuracyRating(accuracy) {
-                if (accuracy >= 90) return 'excellent';
-                if (accuracy >= 80) return 'good';
-                if (accuracy >= 70) return 'average';
-                if (accuracy >= 60) return 'below-average';
-                return 'poor';
-            }
-            
-            getAccuracyDescription(accuracy) {
-                if (accuracy >= 90) return 'Wyśmienicie!';
-                if (accuracy >= 80) return 'Bardzo dobrze';
-                if (accuracy >= 70) return 'Dobrze';
-                if (accuracy >= 60) return 'Może być lepiej';
-                return 'Potrzeba poprawy';
-            }
-            
-            getLocationRating(accuracy) {
-                if (accuracy >= 90) return 'Idealne miejsce';
-                if (accuracy >= 80) return 'Bardzo dobre miejsce';
-                if (accuracy >= 70) return 'Dobre miejsce';
-                if (accuracy >= 60) return 'Przeciętne miejsce';
-                return 'Rozważ zmianę miejsca';
-            }
-            
-            getBestTimePeriod(timePeriods) {
-                const periods = Object.keys(timePeriods).filter(p => timePeriods[p].total >= 3);
-                if (periods.length === 0) return null;
-                const bestPeriodKey = periods.reduce((best, period) => 
-                    timePeriods[period].accuracy > timePeriods[best].accuracy ? period : best
-                );
-                return timePeriods[bestPeriodKey];
-            }
-            
-            getWorstTimePeriod(timePeriods) {
-                const periods = Object.keys(timePeriods).filter(p => timePeriods[p].total >= 3);
-                if (periods.length === 0) return null;
-                const worstPeriodKey = periods.reduce((worst, period) => 
-                    timePeriods[period].accuracy < timePeriods[worst].accuracy ? period : worst
-                );
-                return timePeriods[worstPeriodKey];
-            }
-            
-            getSubjectColor(subjectName) {
-                const colors = ['#1e3a8a', '#059669', '#d97706', '#dc2626', '#7c3aed', '#0891b2'];
-                const hash = subjectName.split('').reduce((a, b) => {
-                    a = ((a << 5) - a) + b.charCodeAt(0);
-                    return a & a;
-                }, 0);
-                return colors[Math.abs(hash) % colors.length];
-            }
-            
-            getTrendClass(trend) {
-                if (trend > 5) return 'improving';
-                if (trend < -5) return 'declining';
-                return 'stable';
-            }
-            
-            getTrendIcon(trend) {
-                if (trend > 5) return '📈';
-                if (trend < -5) return '📉';
-                return '➡️';
-            }
-            
-            getTrendText(trend) {
-                if (trend > 5) return `Poprawa o ${trend}%`;
-                if (trend < -5) return `Spadek o ${Math.abs(trend)}%`;
-                return 'Stabilnie';
-            }
-            
-            generateAchievements() {
-                const achievements = [];
-                const report = this.enhancedAnalytics.generateReport();
-                const summary = report.summary;
-                
-                // Achievement for first tasks
-                if (summary.totalTasks >= 1) {
-                    achievements.push({
-                        emoji: '🎯',
-                        type: 'success',
-                        title: 'Pierwszy krok!',
-                        message: 'Wykonałeś pierwsze zadanie. Każda podróż zaczyna się od jednego kroku.'
-                    });
-                }
-                
-                // Achievement for consistency
-                if (summary.currentStreak >= 3) {
-                    achievements.push({
-                        emoji: '🔥',
-                        type: 'success',
-                        title: 'Na dobrej drodze!',
-                        message: `Masz ${summary.currentStreak} dni z rzędu! Systematyczność to klucz do sukcesu.`
-                    });
-                }
-                
-                // Achievement for accuracy
-                if (summary.overallAccuracy >= 80 && summary.totalTasks >= 10) {
-                    achievements.push({
-                        emoji: '🏆',
-                        type: 'success',
-                        title: 'Mistrz precyzji!',
-                        message: `Twoja skuteczność ${summary.overallAccuracy}% to doskonały wynik!`
-                    });
-                }
-                
-                // Achievement for dedication
-                if (summary.totalTasks >= 50) {
-                    achievements.push({
-                        emoji: '🌟',
-                        type: 'success',
-                        title: 'Prawdziwy dedykowany!',
-                        message: `Wykonałeś już ${summary.totalTasks} zadań. Twoja determinacja jest imponująca!`
-                    });
-                }
-                
-                return achievements;
-            }
+        function setCurrentDate() {
+            const el = document.getElementById('current-date');
+            if (!el) return;
+            const today = new Date();
+            el.textContent = today.toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         }
         
-        // LeftNavigationManager handles navigation initialization
+        function updateDashboardStats() {
+            try {
+                const dm = window.dashboardManager;
+                if (!dm) return;
+                const totalSubjects = dm.subjects?.length || 0;
+                const totalCategories = dm.categories?.length || 0;
+                const totalTasks = dm.entries?.length || 0;
+                let accuracy = 0;
+                if (totalTasks > 0) {
+                    let correct = 0;
+                    dm.entries.forEach(entry => {
+                        let isCorrect = false;
+                        if (typeof entry.correctness === 'boolean') {
+                            isCorrect = entry.correctness;
+                        } else if (typeof entry.correctness === 'string') {
+                            const cv = entry.correctness.toLowerCase();
+                            isCorrect = (cv === 'poprawnie' || cv === 'dobrze' || cv === 'true');
+                        } else if (typeof entry.poprawnosc === 'string') {
+                            const cv2 = entry.poprawnosc.toLowerCase();
+                            isCorrect = (cv2 === 'poprawnie' || cv2 === 'dobrze');
+                        }
+                        if (isCorrect) correct += 1;
+                    });
+                    accuracy = Math.round((correct / totalTasks) * 100);
+                }
+                const setText = (id, val) => { const n = document.getElementById(id); if (n) n.textContent = val; };
+                setText('stat-total-subjects', totalSubjects);
+                setText('stat-total-categories', totalCategories);
+                setText('stat-total-tasks', totalTasks);
+                setText('stat-accuracy-overall', `${accuracy}%`);
+            } catch (_) {}
+        }
+        
+        // Initialize default view and dashboard manager
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show dashboard by default
+            const dash = document.getElementById('dashboard-container');
+            if (dash) {
+                dash.style.display = 'block';
+                dash.style.visibility = 'visible';
+                dash.style.opacity = '1';
+            }
+            // Hide other containers initially
+            ['main-form-container','study-container','analytics-container'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.style.display = 'none'; el.style.visibility = 'hidden'; el.style.opacity = '0'; }
+            });
+            
+            // Initialize dashboard manager
+            try {
+                const api = new GoogleSheetsAPIv2(CONFIG);
+                window.dashboardManager = new DashboardManager(CONFIG, api);
+                if (window.dashboardManager && typeof window.dashboardManager.loadDashboardData === 'function') {
+                    window.dashboardManager.loadDashboardData().then(() => {
+                        updateDashboardStats();
+                    });
+                }
+            } catch (e) {
+                console.warn('Dashboard init failed:', e);
+            }
+            
+            setCurrentDate();
+        });
+        
     </script>
 </body>
 </html>

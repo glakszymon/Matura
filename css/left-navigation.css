@@ -320,6 +320,32 @@
     display: none !important;
 }
 
+/* Analysis row: Summary on the left, subjects on the right */
+.nav-analysis-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.nav-analysis-left { flex: 0 0 auto; }
+.nav-analysis-left .nav-subitem { margin-left: 0; padding-left: 16px; }
+.nav-analysis-right {
+    flex: 1 1 auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+}
+.nav-analysis-right .nav-subject-item {
+    display: inline-flex;
+    margin-left: 0;
+    padding: 8px 10px;
+    border-left: none;
+    border: 1px solid transparent;
+    border-radius: 999px;
+}
+
+/* Dark theme tweaks for analysis row pills will be handled in theme-dark.css */
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .nav-sidebar {
@@ -333,6 +359,9 @@
     .nav-title {
         font-size: 1.25rem;
     }
+    
+    .nav-analysis-row { flex-direction: column; }
+    .nav-analysis-right { justify-content: flex-start; }
 }
 
 @media (max-width: 480px) {

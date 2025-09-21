@@ -1316,6 +1316,94 @@ container.innerHTML = `
     }
 
     /**
+     * Create time-of-day distribution doughnut chart (task counts per period)
+     */
+    createTimeOfDayDistributionChart(timeData, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+
+        // Clear existing chart
+        if (this.charts[containerId]) {
+            this.charts[containerId].destroy();
+        }
+
+        const timePeriods = timeData.timePeriods || {};
+        const periods = Object.keys(timePeriods).filter(period => timePeriods[period].total > 0);
+
+        if (periods.length === 0) {
+            container.innerHTML = `
+                <div class="chart-no-data">
+                    <div class="no-data-icon">🧭</div>
+                    <div class="no-data-text">Brak danych o rozkładzie czasu</div>
+                    <div class="no-data-subtitle">Dodaj zadania o różnych porach, aby zobaczyć rozkład</div>
+                </div>
+            `;
+            return null;
+        }
+
+        // Create canvas
+        container.innerHTML = '<canvas id="' + containerId + '-canvas"></canvas>';
+        const canvas = document.getElementById(containerId + '-canvas');
+
+        // Choose consistent colors by period
+        const periodColor = (p) => {
+            const key = p.toUpperCase();
+            if (key.includes('MORNING')) return this.chartColors.success;      // green
+            if (key.includes('AFTERNOON')) return this.chartColors.info;       // blue
+            if (key.includes('EVENING')) return this.chartColors.warning;      // orange
+            if (key.includes('NIGHT')) return this.chartColors.error;          // red
+            return this.chartColors.primary;                                   // fallback
+        };
+
+        const labels = periods.map(p => timePeriods[p].label);
+        const values = periods.map(p => timePeriods[p].total);
+        const bg = periods.map(p => periodColor(p) + '80');
+        const border = periods.map(p => periodColor(p));
+
+        const config = {
+            type: 'doughnut',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Udział zadań',
+                    data: values,
+                    backgroundColor: bg,
+                    borderColor: border,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: 'Udział zadań według pory dnia' },
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const idx = ctx.dataIndex;
+                                const periodKey = periods[idx];
+                                const total = timePeriods[periodKey].total;
+                                const correct = timePeriods[periodKey].correct;
+                                const acc = timePeriods[periodKey].accuracy;
+                                return [
+                                    `${labels[idx]}: ${total} zadań`,
+                                    `Poprawne: ${correct}/${total} (${acc}%)`
+                                ];
+                            }
+                        }
+                    }
+                },
+                cutout: '60%'
+            }
+        };
+
+        const chart = new Chart(canvas, config);
+        this.charts[containerId] = chart;
+        return chart;
+    }
+
+    /**
      * Create location impact comparison chart
      */
     createLocationImpactChart(locationData, containerId) {

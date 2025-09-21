@@ -1,5 +1,8 @@
 // Configuration settings for the Exam Preparation Application
 const CONFIG = {
+    // Feature flags
+    DARK_MODE_EXTRAS_ENABLED: false,
+
     // Google Sheets Configuration
     SPREADSHEET_ID: '1a51kwcG8aT4rfTSdhJ6HKSggneURQkQsywZClCcIcJ8',
     
@@ -37,6 +40,15 @@ const CONFIG = {
         NAME: 'Egzamin Główny',
         COUNTDOWN_UPDATE_INTERVAL: 1000 // Update every second
     },
+    // Optional: multiple exams (up to 5) for multi-countdown
+    EXAMS: [
+        // Example placeholders (edit as needed)
+        // { name: 'Matura Polski', date: '2026-05-06' },
+        // { name: 'Matura Matematyka', date: '2026-05-08' },
+        // { name: 'Matura Angielski', date: '2026-05-10' },
+        // { name: 'Matura Historia', date: '2026-05-12' },
+        // { name: 'Matura Biologia', date: '2026-05-14' }
+    ],
     
     // Google Apps Script Web App URL
     GAS_WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbzoBNAoL9hsXgGkChm5JTUCnQPLrstVRFlqqYNTXs1Sj6aWpT9x-5aFG2EjGAP6ieQ/exec',
@@ -220,6 +232,11 @@ const CONFIG = {
         THEME_PREFERENCE: 'themePreference'
     },
     
+    // Goals
+    GOALS: {
+        weeklyTasksTarget: 50
+    },
+
     // Theme Configuration
     THEME: {
         PRIMARY_COLOR: '#667eea',
@@ -342,9 +359,9 @@ const CONFIG = {
                 TEAL: '#06b6d4'
             },
             SUBJECT_COLORS: [
-                '#667eea', '#764ba2', '#10b981', '#f59e0b', 
-                '#ef4444', '#3b82f6', '#8b5cf6', '#06b6d4',
-                '#84cc16', '#f97316', '#ec4899', '#6366f1'
+                '#4f46e5', '#0ea5e9', '#10b981', '#f59e0b',
+                '#ef4444', '#6366f1', '#14b8a6', '#a855f7',
+                '#84cc16', '#fb7185', '#f97316', '#22c55e'
             ],
             DEFAULT_HEIGHT: 300,
             RESPONSIVE_BREAKPOINTS: {

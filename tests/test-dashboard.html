@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard UI Test</title>
+  <link rel="stylesheet" href="../css/styles.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <!-- Optional: dark theme for quick check -->
+  <!-- <link rel="stylesheet" href="../css/theme-dark.css" /> -->
+  <style>
+    /* Test-only helpers (scoped so they won't override app files) */
+    .panel { padding: 16px; }
+    .panel h2 { margin: 0 0 8px 0; }
+    .section { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div id="dashboard-container" class="dashboard-container">
+    <section class="panel">
+      <h2>Podgląd Dashboard UI (test)</h2>
+      <p>Podgląd kompaktowego kalendarza (heatmap) i listy dziennej według przedmiotów.</p>
+
+      <div class="section">
+        <h3>Kalendarz aktywności (mały)</h3>
+        <div class="activity-heatmap small" id="activity-heatmap"></div>
+      </div>
+
+      <div class="section">
+        <h3>Dzienne aktywności wg przedmiotu (przykład)</h3>
+        <div id="daily-subject-list" class="daily-subject-list">
+          <div class="subject-row">
+            <div class="subject-name">Matematyka</div>
+            <div class="subject-count">12 razem</div>
+            <div class="subject-count good">9 ✓</div>
+            <div class="subject-count bad">3 ✗</div>
+          </div>
+          <div class="subject-row">
+            <div class="subject-name">Biologia</div>
+            <div class="subject-count">7 razem</div>
+            <div class="subject-count good">5 ✓</div>
+            <div class="subject-count bad">2 ✗</div>
+          </div>
+          <div class="subject-row">
+            <div class="subject-name">Historia</div>
+            <div class="subject-count">5 razem</div>
+            <div class="subject-count good">4 ✓</div>
+            <div class="subject-count bad">1 ✗</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Wypełnij mały kalendarz losowymi danymi (21 dni)
+    (function () {
+      const host = document.getElementById('activity-heatmap');
+      if (!host) return;
+      const days = 21;
+      const cells = [];
+      for (let i = 0; i < days; i++) {
+        const lvl = Math.floor(Math.random() * 5); // 0..4
+        cells.push(`<div class="hm-cell ${lvl ? ('l' + lvl) : ''}"></div>`);
+      }
+      host.innerHTML = cells.join('');
+    })();
+  </script>
+</body>
+</html>

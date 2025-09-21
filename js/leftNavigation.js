@@ -64,10 +64,10 @@ class LeftNavigationManager {
     
     setupContainers() {
         this.containers = {
+            'dashboard': document.getElementById('dashboard-container'),
             'main': document.getElementById('main-form-container'),
             'study': document.getElementById('study-container'),
             'analytics': document.getElementById('analytics-container'),
-            'enhanced-analytics': document.getElementById('enhanced-analytics-container'),
             'add-tasks': document.getElementById('tasks-tab'),
             'add-subjects': document.getElementById('subjects-tab'),
             'add-categories': document.getElementById('categories-tab')
@@ -99,8 +99,17 @@ class LeftNavigationManager {
     handleNavItemClick(item) {
         const target = item.getAttribute('data-target');
         const subjectName = item.getAttribute('data-subject');
+        const isSummary = item.getAttribute('data-summary') === 'true';
         
-        if (target) {
+        if (isSummary) {
+            // Open analytics container and show summary view
+            this.hideAllContainers();
+            this.showContainer('analytics');
+            if (window.analyticsManager && typeof window.analyticsManager.showSummaryAnalytics === 'function') {
+                window.analyticsManager.showSummaryAnalytics();
+            }
+            this.setActiveNavItem(item);
+        } else if (target) {
             this.navigateTo(target, item);
         } else if (subjectName) {
             this.navigateToSubjectAnalytics(subjectName, item);
@@ -126,10 +135,6 @@ class LeftNavigationManager {
         
         this.setActiveNavItem(activeItem);
         
-        // Special handling for enhanced analytics
-        if (target === 'enhanced-analytics') {
-            this.initializeEnhancedAnalytics();
-        }
     }
     
     navigateToSubjectAnalytics(subjectName, activeItem) {
@@ -343,11 +348,6 @@ class LeftNavigationManager {
         }
     }
     
-    initializeEnhancedAnalytics() {
-        if (!window.enhancedAnalyticsApp && window.initializeEnhancedAnalytics) {
-            window.initializeEnhancedAnalytics();
-        }
-    }
     
     // Public method to set active navigation item programmatically
     setActiveByTarget(target) {
@@ -373,10 +373,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!window.leftNavigationManager) {
             window.leftNavigationManager = new LeftNavigationManager();
             
-            // Set default active state to Main
-            const mainNavItem = document.querySelector('[data-target=\"main\"]');
-            if (mainNavItem) {
-                window.leftNavigationManager.setActiveNavItem(mainNavItem);
+            // Set default active state to Dashboard
+            const dashNavItem = document.querySelector('[data-target=\"dashboard\"]');
+            if (dashNavItem) {
+                window.leftNavigationManager.setActiveNavItem(dashNavItem);
+                window.leftNavigationManager.hideAllContainers();
+                window.leftNavigationManager.showContainer('dashboard');
             }
         }
     }, 100);

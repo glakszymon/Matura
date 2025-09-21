@@ -20,6 +20,7 @@ class AnalyticsManager {
         // Charts integration
         this.timeSeriesData = {};
         this.chartsManager = null;
+        this.subjectTimeAnalysisManager = null;
         
         this.init();
     }
@@ -32,6 +33,13 @@ init() {
         // Initialize ChartsManager lazily to avoid dependency issues
         if (typeof ChartsManager !== 'undefined') {
             this.chartsManager = new ChartsManager(this);
+        }
+        // Initialize SubjectTimeAnalysisManager only if legacy containers exist
+        if (typeof SubjectTimeAnalysisManager !== 'undefined') {
+            const hasLegacyContainers = document.getElementById('subject-sub-tabs') && document.getElementById('subject-tab-contents');
+            if (hasLegacyContainers) {
+                this.subjectTimeAnalysisManager = new SubjectTimeAnalysisManager(this);
+            }
         }
         // Analytics Manager initialized
     }
@@ -83,6 +91,21 @@ init() {
                 this.handleSortChange(e.target);
             });
         });
+
+        // Summary tab at top of analytics
+        const summaryTabBtn = document.getElementById('summary-tab-btn');
+        if (summaryTabBtn) {
+            summaryTabBtn.addEventListener('click', async () => {
+                try {
+                    if (!this.isDataLoaded || !this.subjectAnalytics) {
+                        await this.loadAnalyticsData();
+                    }
+                } catch (e) {
+                    console.warn('Failed to preload analytics before summary:', e);
+                }
+                this.showSummaryAnalytics();
+            });
+        }
     }
     
     /**
@@ -420,6 +443,11 @@ processAnalyticsData() {
         // Process each subject individually 
         this.processSubjectAnalytics();
         
+        // Initialize subject time analysis manager with subject data
+        if (this.subjectTimeAnalysisManager) {
+            this.subjectTimeAnalysisManager.renderSubjectTabs(this.subjectAnalytics);
+        }
+        
         // Build time series data for charts if charts manager is available
         if (this.chartsManager) {
             try {
@@ -658,6 +686,204 @@ processAnalyticsData() {
             </div>
         `;
     }
+
+    /**
+     * Show aggregated summary across all subjects
+     */
+    async showSummaryAnalytics() {
+        const analyticsContent = document.getElementById('analytics-content');
+        if (!analyticsContent) return;
+
+        // Ensure data
+        if (!this.isDataLoaded || !this.subjectAnalytics) {
+            try {
+                await this.loadAnalyticsData();
+            } catch (_) {}
+        }
+
+        // Compute overall stats and per-subject rows
+        const overall = this.calculateOverallStats(this.tasks || []);
+        const subjects = this.subjectAnalytics ? Object.keys(this.subjectAnalytics) : [];
+        const subjectsCount = subjects.length;
+
+        // Best/Worst subjects
+        const subjectEntries = subjects.map(n => ({ name: n, st: this.subjectAnalytics[n]?.stats || { totalTasks: 0, correctTasks: 0, incorrectTasks: 0, correctPercentage: 0 } }));
+        const withTasks = subjectEntries.filter(e => e.st.totalTasks > 0);
+        const best = withTasks.length ? withTasks.reduce((a,b)=> (b.st.correctPercentage > a.st.correctPercentage ? b : a), withTasks[0]) : null;
+        const worst = withTasks.length ? withTasks.reduce((a,b)=> (b.st.correctPercentage < a.st.correctPercentage ? b : a), withTasks[0]) : null;
+
+        // Build subject rows (more info)
+        const rows = subjects.map(name => {
+            const s = this.subjectAnalytics[name];
+            const st = s && s.stats ? s.stats : { totalTasks: 0, correctTasks: 0, incorrectTasks: 0, correctPercentage: 0 };
+            const weakCount = (s && Array.isArray(s.weakCategories)) ? s.weakCategories.length : 0;
+            const strongCount = (s && Array.isArray(s.strongCategories)) ? s.strongCategories.length : 0;
+            const catCount = s && s.categories ? Object.keys(s.categories).length : 0;
+            const icon = this.getSubjectIcon(name);
+            const trend = this.getSubjectTrendData(s ? s.tasks || [] : []);
+            const lastActivity = s && s.tasks && s.tasks.length ? this.formatTimeAgo(s.tasks[s.tasks.length - 1].timestamp) : '—';
+            return `
+                <tr data-subject="${this.escapeHtml(name)}">
+                    <td class="subject-name-cell">${icon} ${this.escapeHtml(name)}</td>
+                    <td class="center">${st.totalTasks}</td>
+                    <td class="center">${st.correctTasks}</td>
+                    <td class="center">${st.incorrectTasks}</td>
+                    <td class="center"><span class="analytics-percentage ${this.getPerformanceClass(st.correctPercentage)}">${st.correctPercentage}%</span></td>
+                    <td class="center"><span class="trend ${trend.class}">${trend.icon}</span></td>
+                    <td class="center">${lastActivity}</td>
+                    <td class="center">${catCount}</td>
+                    <td class="center">${strongCount}</td>
+                    <td class="center">${weakCount}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Insights chips
+        const insights = `
+            <div class="recent-summary" style="margin-bottom: 10px;">
+                <span class="chip info">📚 Przedmioty: ${subjectsCount}</span>
+                <span class="chip success">✅ Poprawne razem: ${overall.correctTasks || 0}</span>
+                <span class="chip error">❌ Błędne razem: ${(overall.totalTasks - (overall.correctTasks || 0)) || 0}</span>
+                ${best ? `<span class="chip success">🏆 Najlepszy: ${this.escapeHtml(best.name)} (${best.st.correctPercentage}%)</span>` : ''}
+                ${worst ? `<span class="chip error">⚠️ Do poprawy: ${this.escapeHtml(worst.name)} (${worst.st.correctPercentage}%)</span>` : ''}
+            </div>`;
+
+        analyticsContent.innerHTML = `
+            <div class="summary-analytics-section">
+                <div class="summary-header">
+                    <h3>📊 Podsumowanie wszystkich przedmiotów</h3>
+                    <p class="summary-subtitle">Wiele sposobów analizy — wykresy, wskaźniki i krótkie listy</p>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card grad" aria-label="Zadania"><div class="kpi-icon">📦</div><div class="kpi-title">Zadania</div><div class="kpi-value">${overall.totalTasks}</div><div class="kpi-diff">—</div></div>
+                    <div class="kpi-card grad" aria-label="Skuteczność"><div class="kpi-icon">🎯</div><div class="kpi-title">Skuteczność</div><div class="kpi-value">${overall.correctPercentage}%</div><div class="kpi-diff">—</div></div>
+                    <div class="kpi-card grad" aria-label="Przedmioty"><div class="kpi-icon">📚</div><div class="kpi-title">Przedmioty</div><div class="kpi-value">${subjectsCount}</div><div class="kpi-diff">—</div></div>
+                </div>
+
+                ${insights}
+
+                <!-- Charts: one per line -->
+                <div class="subject-chart-card">
+                    <h4 class="subject-chart-title">📊 Skuteczność dzienna (ogółem)</h4>
+                    <div class="subject-chart" id="summary-daily-accuracy"></div>
+                </div>
+                <div class="subject-chart-card">
+                    <h4 class="subject-chart-title">🏷️ Skuteczność kategorii w czasie</h4>
+                    <div class="subject-chart" id="summary-category-accuracy"></div>
+                </div>
+                <div class="subject-chart-card">
+                    <h4 class="subject-chart-title">⏰ Pory dnia — skuteczność</h4>
+                    <div class="subject-chart" id="summary-time-of-day"></div>
+                </div>
+
+                <!-- Compact subjects table -->
+                <div class="analytics-table-container" style="margin-top: 1rem;">
+                    <table class="analytics-table compact">
+                        <thead>
+                            <tr>
+                                <th>📚 Przedmiot</th>
+                                <th class="center">📦 Razem</th>
+                                <th class="center">🎯 Skuteczność</th>
+                                <th class="center">⚠️ Słabe</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-compact-rows"></tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        // Initialize charts after content injection
+        const lazyInit = () => {
+            if (!this.chartsManager) return;
+            this.chartsManager.createDailyAccuracyWithOverallLineChart(
+                this.tasks || [],
+                overall.correctPercentage || 0,
+                'summary-daily-accuracy'
+            );
+            this.chartsManager.createCategoryAccuracyLineChart(
+                this.tasks || [],
+                'summary-category-accuracy'
+            );
+            // Time of day
+            const tod = this.computeTimeOfDaySummary(this.tasks || []);
+            const timeData = { timePeriods: (tod.periods || []).reduce((acc, p) => {
+                acc[p.label || p.key || 'Okres'] = { total: p.total, correct: p.correct, accuracy: p.accuracy };
+                return acc;
+            }, {}) };
+            if (this.chartsManager.createTimeOfDayChart) {
+                this.chartsManager.createTimeOfDayChart(timeData, 'summary-time-of-day');
+            }
+            // Compact table rows
+            const tbody = document.getElementById('summary-compact-rows');
+            if (tbody) {
+                const rowsCompact = (subjects || []).map(name => {
+                    const s = this.subjectAnalytics[name];
+                    const st = s && s.stats ? s.stats : { totalTasks: 0, correctTasks: 0, incorrectTasks: 0, correctPercentage: 0 };
+                    const weakCount = (s && Array.isArray(s.weakCategories)) ? s.weakCategories.length : 0;
+                    const icon = this.getSubjectIcon(name);
+                    return `
+                        <tr data-subject="${this.escapeHtml(name)}">
+                            <td class="subject-name-cell">${icon} ${this.escapeHtml(name)}</td>
+                            <td class="center">${st.totalTasks}</td>
+                            <td class="center"><span class="analytics-percentage ${this.getPerformanceClass(st.correctPercentage)}">${st.correctPercentage}%</span></td>
+                            <td class="center">${weakCount}</td>
+                        </tr>
+                    `;
+                }).join('');
+                tbody.innerHTML = rowsCompact || '<tr><td colspan="4" class="center">Brak danych</td></tr>';
+                // Click to open subject
+                tbody.addEventListener('click', (e) => {
+                    const tr = e.target.closest('tr[data-subject]');
+                    if (!tr) return;
+                    const subject = tr.getAttribute('data-subject');
+                    if (window.leftNavigationManager) {
+                        window.leftNavigationManager.navigateToSubjectAnalytics(subject);
+                    } else if (this.showSubjectAnalytics) {
+                        this.showSubjectAnalytics(subject);
+                    }
+                });
+            }
+        };
+        if ('IntersectionObserver' in window) {
+            const io = new IntersectionObserver((entries, obs) => {
+                for (const e of entries) {
+                    if (e.isIntersecting) { lazyInit(); obs.disconnect(); break; }
+                }
+            }, { rootMargin: '0px 0px -25% 0px' });
+            io.observe(analyticsContent);
+        } else {
+            lazyInit();
+        }
+
+        this.setSummaryTabActive(true);
+
+        // Row click: navigate to subject analytics
+        const table = analyticsContent.querySelector('.analytics-table');
+        if (table) {
+            table.addEventListener('click', (e) => {
+                const tr = e.target.closest('tr[data-subject]');
+                if (!tr) return;
+                const subject = tr.getAttribute('data-subject');
+                if (!subject) return;
+                if (window.leftNavigationManager) {
+                    window.leftNavigationManager.navigateToSubjectAnalytics(subject);
+                } else if (this.showSubjectAnalytics) {
+                    this.showSubjectAnalytics(subject);
+                }
+            });
+        }
+    }
+
+    /**
+     * Toggle active state on the summary tab button
+     */
+    setSummaryTabActive(isActive) {
+        const btn = document.getElementById('summary-tab-btn');
+        if (!btn) return;
+        if (isActive) btn.classList.add('active'); else btn.classList.remove('active');
+    }
     
     /**
      * Render subject selection buttons with enhanced information
@@ -832,6 +1058,38 @@ async showSubjectAnalytics(subjectName) {
         
         if (!analyticsContent) return;
         
+        // Console: clear everything and only log math summary
+        try {
+            console.clear();
+            if (!window.__consoleSilenced) {
+                window.__consoleOriginal = {
+                    log: console.log,
+                    info: console.info,
+                    warn: console.warn,
+                    error: console.error,
+                    debug: console.debug
+                };
+                console.log = function(){};
+                console.warn = function(){};
+                console.error = function(){};
+                console.debug = function(){};
+                window.__consoleSilenced = true;
+            }
+            const sName = String(subject.name || subjectName || '');
+            const isMath = /matem|math/i.test(sName);
+            if (isMath) {
+                const t = subject.tasks || [];
+                const total = t.length;
+                const correct = t.filter(tt => this.isTaskCorrect(tt)).length;
+                const incorrect = total - correct;
+                const catCount = Object.keys(subject.categories || {}).length;
+                const last = total > 0 ? this.formatTimeAgo(t[t.length - 1].timestamp) : '—';
+                console.info('[MATH] Subject:', sName);
+                console.info('[MATH] Tasks:', total, '| Correct:', correct, '| Incorrect:', incorrect, '| Categories:', catCount);
+                console.info('[MATH] Last activity:', last);
+            }
+        } catch(_) {}
+        
         // Keep subject selection visible and update active state
         this.updateSelectedSubject(subjectName);
         
@@ -846,26 +1104,83 @@ async showSubjectAnalytics(subjectName) {
         `;
         
         analyticsContent.innerHTML = html;
+        this.setSummaryTabActive(false);
         
-        // Render charts and time analysis
+        // Small reveal animation on first render
+        const rootSec = analyticsContent.querySelector('.subject-analytics-section');
+        if (rootSec) {
+            rootSec.classList.add('reveal');
+            setTimeout(()=> rootSec.classList.remove('reveal'), 280);
+        }
+        
+        // Safe, reusable id for DOM containers in this subject section
         const safeId = this.getSafeId(subject.name);
-        if (this.chartsManager) {
-            // Daily accuracy with overall line
+        
+        // Enhance interactions (delegation, labels, filtering)
+        this.enhanceSubjectTableInteractions(safeId);
+        this.enhanceSubjectSubnavAndFilters(safeId, subject);
+
+        // Wire mobile action bar
+        const mab = document.getElementById(`mobile-action-bar-${safeId}`);
+        if (mab) {
+            mab.addEventListener('click', (e) => {
+                const btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                const action = btn.getAttribute('data-action');
+                if (action === 'start-study') {
+                    if (window.navigationManager) window.navigationManager.showForm('study');
+                } else if (action === 'add-task') {
+                    if (window.navigationManager) window.navigationManager.showForm('main');
+                } else if (action === 'view-sessions') {
+                    // Switch to Sessions subsection
+                    const subnav = document.getElementById(`subnav-${safeId}`);
+                    const ses = subnav && subnav.querySelector('[data-subsection="sessions"]');
+                    if (ses) ses.click();
+                }
+            });
+        }
+        
+        // Render charts lazily when visible
+        const lazyInit = () => {
+            if (!this.chartsManager) return;
+            // Apply ambient class to chart shells
+            const ambients = document.querySelectorAll('.enhanced-chart-section');
+            ambients.forEach(a => a.classList.add('chart-ambient'));
+
             this.chartsManager.createDailyAccuracyWithOverallLineChart(
                 subject.tasks,
                 subject.stats?.correctPercentage || 0,
                 `daily-accuracy-${safeId}`
             );
-            // Daily tasks combined into the daily accuracy chart (y1)
-            // this.chartsManager.createDailyTasksStackedChart(subject.tasks, `daily-tasks-${safeId}`);
-            // Category accuracy over time
             this.chartsManager.createCategoryAccuracyLineChart(
                 subject.tasks,
                 `category-accuracy-${safeId}`
             );
+            // Time analysis
+            this.renderTimeAnalysis(subject);
+            // Mini heatmap activity for this subject
+            const dailyActivity = this.buildDailyActivity(subject.tasks);
+            this.chartsManager.createConsistencyHeatmapChart({ dailyActivity }, `subject-heatmap-${safeId}`);
+        };
+        const sectionEl = analyticsContent.querySelector('.subject-analytics-section');
+        if ('IntersectionObserver' in window && sectionEl) {
+            const io = new IntersectionObserver((entries, obs) => {
+                for (const e of entries) {
+                    if (e.isIntersecting) {
+                        lazyInit();
+                        obs.disconnect();
+                        break;
+                    }
+                }
+            }, { rootMargin: '0px 0px -25% 0px' });
+            io.observe(sectionEl);
+        } else {
+            lazyInit();
         }
-        // Time analysis
-        this.renderTimeAnalysis(subject);
+
+        // Back-to-top button and compact header on scroll
+        this.injectBackToTop();
+        this.setupSubjectScrollUX();
     }
     
     // Charts functionality removed
@@ -962,7 +1277,8 @@ async showSubjectAnalytics(subjectName) {
      * Render history chart for new card format
      */
     renderHistoryChart(tasks) {
-        const recentTasks = tasks.slice(-10);
+        const maxBars = (this.config && this.config.RECENT_TIMELINE_COUNT) || 20;
+        const recentTasks = tasks.slice(-maxBars);
         const containerId = `recent-${Date.now()}-${Math.floor(Math.random()*1000)}`;
 
         // Compute stats
@@ -1030,10 +1346,10 @@ async showSubjectAnalytics(subjectName) {
                     <span class="chip streak">🔥 Passa: ${currentCorrectStreak}</span>
                     <div class="recent-actions">
                         <label class="control-item">
-                            <input type="checkbox" onchange="window.analyticsManager && window.analyticsManager.setRecentFilterIncorrect('${containerId}', this.checked)">
+                            <input type="checkbox" data-action="recent-only-incorrect" data-container="${containerId}">
                             Tylko błędne
                         </label>
-                        <button type="button" class="btn-mini" onclick="window.analyticsManager && window.analyticsManager.toggleRecentDetails('${containerId}')">Szczegóły</button>
+                        <button type="button" class="btn-mini" data-action="recent-details" data-container="${containerId}">Szczegóły</button>
                     </div>
                 </div>
                 <div class="timeline" id="${containerId}-timeline">
@@ -1123,77 +1439,152 @@ async showSubjectAnalytics(subjectName) {
     }
 
     /**
-     * Compute simple time-of-day summary for a subject
+     * Compute enhanced time-of-day summary for a subject with best/worst periods
      */
     computeTimeOfDaySummary(tasks) {
         const periods = {
-            RANO: { label: 'Rano (6:00–12:00)', start: 6, end: 12, total: 0, correct: 0 },
-            POPO: { label: 'Popołudnie (12:00–18:00)', start: 12, end: 18, total: 0, correct: 0 },
-            WIEC: { label: 'Wieczór (18:00–24:00)', start: 18, end: 24, total: 0, correct: 0 },
-            NOC:  { label: 'Noc (0:00–6:00)', start: 0, end: 6, total: 0, correct: 0 }
+            RANO: { label: 'Rano (6:00–12:00)', emoji: '🌅', start: 6, end: 12, total: 0, correct: 0, totalTime: 0 },
+            POPO: { label: 'Popołudnie (12:00–18:00)', emoji: '☀️', start: 12, end: 18, total: 0, correct: 0, totalTime: 0 },
+            WIEC: { label: 'Wieczór (18:00–24:00)', emoji: '🌙', start: 18, end: 24, total: 0, correct: 0, totalTime: 0 },
+            NOC:  { label: 'Noc (0:00–6:00)', emoji: '🌃', start: 0, end: 6, total: 0, correct: 0, totalTime: 0 }
         };
+        
         (tasks || []).forEach(task => {
             const ts = task.start_time || task.timestamp;
             const hour = ts ? new Date(ts).getHours() : null;
             if (hour === null || isNaN(hour)) return;
+            
             let key;
             if (hour >= 6 && hour < 12) key = 'RANO';
             else if (hour >= 12 && hour < 18) key = 'POPO';
             else if (hour >= 18 && hour < 24) key = 'WIEC';
             else key = 'NOC';
+            
             periods[key].total++;
             if (this.isTaskCorrect(task)) periods[key].correct++;
-        });
-        // compute best
-        let best = null;
-        Object.values(periods).forEach(p => {
-            if (p.total > 0) {
-                const acc = Math.round((p.correct / p.total) * 100);
-                if (!best || acc > best.accuracy) best = { label: p.label, accuracy: acc };
+            
+            // Calculate time spent if available
+            if (task.start_time && task.end_time) {
+                const duration = new Date(task.end_time) - new Date(task.start_time);
+                if (duration > 0) {
+                    periods[key].totalTime += duration;
+                }
             }
         });
-        return best; // may be null
+        
+        // Calculate accuracy for each period and find best/worst
+        const periodStats = [];
+        Object.entries(periods).forEach(([key, period]) => {
+            if (period.total > 0) {
+                const accuracy = Math.round((period.correct / period.total) * 100);
+                periodStats.push({
+                    key,
+                    ...period,
+                    accuracy,
+                    averageTime: period.total > 0 ? Math.round(period.totalTime / period.total) : 0
+                });
+            }
+        });
+        
+        // Sort by accuracy to find best/worst (minimum 3 tasks for reliable data)
+        const reliablePeriods = periodStats.filter(p => p.total >= 3);
+        const sortedByAccuracy = [...periodStats].sort((a, b) => b.accuracy - a.accuracy);
+        
+        const best = reliablePeriods.length > 0 ? 
+            reliablePeriods.reduce((best, current) => 
+                current.accuracy > best.accuracy ? current : best
+            ) : (periodStats.length > 0 ? sortedByAccuracy[0] : null);
+            
+        const worst = reliablePeriods.length > 0 ? 
+            reliablePeriods.reduce((worst, current) => 
+                current.accuracy < worst.accuracy ? current : worst
+            ) : (periodStats.length > 1 ? sortedByAccuracy[sortedByAccuracy.length - 1] : null);
+        
+        // Calculate total study time across all periods
+        const totalStudyTime = Object.values(periods).reduce((sum, period) => sum + period.totalTime, 0);
+        
+        return {
+            periods: periodStats,
+            best,
+            worst,
+            totalStudyTime,
+            totalTasks: periodStats.reduce((sum, period) => sum + period.total, 0),
+            overallAccuracy: periodStats.length > 0 ? 
+                Math.round((periodStats.reduce((sum, p) => sum + p.correct, 0) / 
+                           periodStats.reduce((sum, p) => sum + p.total, 0)) * 100) : 0
+        };
     }
 
     /**
      * Render a complete section for one subject
      */
-    renderSubjectSection(subject) {
+renderSubjectSection(subject) {
         const stats = subject.stats;
         const categoryPerformance = subject.categoryPerformance;
         const strongCategories = subject.strongCategories;
         const weakCategories = subject.weakCategories;
         const safeId = this.getSafeId(subject.name);
+        const accent = this.getSubjectAccentColor(subject.name);
+const lastActivity = subject.tasks.length > 0 ? this.formatTimeAgo(subject.tasks[subject.tasks.length - 1].timestamp) : '—';
         
         return `
-            <div class="subject-analytics-section">
-                <div class="subject-analytics-header">
-                    <h3 class="subject-analytics-title">
-                        📊 ${this.escapeHtml(subject.name)}
-                    </h3>
-                    <p class="subject-analytics-subtitle">
-                        Analiza wyników dla przedmiotu: ${this.escapeHtml(subject.name)}
-                    </p>
+            <div class="subject-analytics-section" style="--subject-accent: ${accent}">
+<div class="subject-sticky-header">
+                    <div class="subject-breadcrumb">Analityka › Przedmioty › ${this.escapeHtml(subject.name)}</div>
+<div class="subject-hero">
+                        <div class="subject-avatar" aria-hidden="true">
+                            <div class="avatar-ring"><span class="avatar-emoji">${this.getSubjectIcon(subject.name)}</span></div>
+                        </div>
+                        <div class="subject-hero-main">
+                            <h3 class="subject-name">${this.escapeHtml(subject.name)}</h3>
+                        </div>
+                        <div class="hero-stat" aria-label="Skuteczność">
+                            <div class="stat-value">${stats.correctPercentage}%</div>
+                            <div class="stat-label">Skuteczność</div>
+                        </div>
+                    </div>
+                    <div class="subject-controls">
+<div class="subject-subnav" id="subnav-${safeId}" role="tablist" aria-label="Sekcje">
+                            <button class="subnav-pill" data-subsection="overview" aria-current="page">Przegląd</button>
+                            <button class="subnav-pill" data-subsection="time">Czas</button>
+                            <button class="subnav-pill" data-subsection="sessions">Sesje</button>
+                        </div>
+<div class="subject-toolbar">
+                            <div class="timeframe-group" id="timeframe-${safeId}">
+                                <button class="time-btn" data-range="7" aria-label="Zakres: Tydzień">Tydzień</button>
+                                <button class="time-btn" data-range="30" aria-label="Zakres: 30 dni">30 dni</button>
+                                <button class="time-btn" data-range="90" aria-label="Zakres: 90 dni">90 dni</button>
+                                <button class="time-btn" data-range="all" aria-label="Zakres: Wszystko">Wszystko</button>
+                                <button class="time-btn compact" id="timeframe-toggle-${safeId}" aria-label="Zmień zakres" title="Zmień zakres">🗓️</button>
+                            </div>
+                            <div class="toolbar-right">
+                                <div class="active-filters" id="active-filters-${safeId}"></div>
+                                <button class="filters-toggle" id="filters-toggle-${safeId}" aria-controls="filters-panel-${safeId}" aria-expanded="false">Filtry (0)</button>
+                            </div>
+                        </div>
+                        <div class="filters-panel" id="filters-panel-${safeId}" hidden>
+                            <div class="filter-chips" id="filters-${safeId}">
+                                <button class="filter-chip" data-filter="correct" aria-pressed="false" aria-label="Filtr: poprawne">Poprawne</button>
+                                <button class="filter-chip" data-filter="incorrect" aria-pressed="false" aria-label="Filtr: błędne">Błędne</button>
+                                <button class="filter-chip selector" data-select="location" aria-haspopup="true" aria-expanded="false" aria-label="Filtr: miejsce">Miejsce ▾</button>
+                                <button class="filter-chip selector" data-select="difficulty" aria-haspopup="true" aria-expanded="false" aria-label="Filtr: trudność">Trudność ▾</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- Stats Summary Cards -->
-                <div class="analytics-summary-cards">
-                    <div class="analytics-summary-card">
-                        <div class="analytics-card-icon">🎯</div>
-                        <h4 class="analytics-card-value success">${stats.correctPercentage}%</h4>
-                        <p class="analytics-card-label">Skuteczność</p>
+<section class="subject-section active" id="section-overview-${safeId}">
+                    <div class="subject-section-header"><span class="section-title">Przegląd</span><button class="btn-mini" data-accordion="toggle">▾</button></div>
+
+                    <div class="recent-activity">${this.renderHistoryChart(subject.tasks)}</div>
+
+<div class="kpi-grid">
+                        <div class="kpi-card grad" aria-label="Zadania"><div class="kpi-icon">📦</div><div class="kpi-title">Zadania</div><div class="kpi-value">${stats.totalTasks}</div><div class="kpi-diff">—</div></div>
+                        <div class="kpi-card grad" aria-label="Skuteczność"><div class="kpi-icon">🎯</div><div class="kpi-title">Skuteczność</div><div class="kpi-value">${stats.correctPercentage}%</div><div class="kpi-diff">—</div></div>
+                        <div class="kpi-card grad" aria-label="Aktywne kategorie"><div class="kpi-icon">🏷️</div><div class="kpi-title">Kategorie</div><div class="kpi-value">${categoryPerformance.length}</div><div class="kpi-diff">—</div></div>
+                        <div class="kpi-card grad" aria-label="Ostatnia aktywność"><div class="kpi-icon">⏱️</div><div class="kpi-title">Ostatnio</div><div class="kpi-value">${lastActivity}</div><div class="kpi-diff">—</div></div>
                     </div>
-                    <div class="analytics-summary-card">
-                        <div class="analytics-card-icon">📝</div>
-                        <h4 class="analytics-card-value neutral">${stats.correctTasks}/${stats.totalTasks}</h4>
-                        <p class="analytics-card-label">Zadania rozwiązane</p>
-                    </div>
-                    <div class="analytics-summary-card">
-                        <div class="analytics-card-icon">🏷️</div>
-                        <h4 class="analytics-card-value neutral">${categoryPerformance.length}</h4>
-                        <p class="analytics-card-label">Aktywne kategorie</p>
-                    </div>
-                </div>
+
 
                 <!-- Extra Subject Metrics -->
                 ${(() => {
@@ -1208,6 +1599,11 @@ async showSubjectAnalytics(subjectName) {
                     }
                     const tod = this.computeTimeOfDaySummary(subject.tasks);
                     const bestDateStr = bestDate ? bestDate.toLocaleDateString('pl-PL') : '—';
+                    
+                    // Enhanced time analysis display
+                    const totalStudyTimeFormatted = tod.totalStudyTime > 0 ? 
+                        this.formatDuration(tod.totalStudyTime) : '—';
+                    
                     return `
                         <div class="analytics-summary-cards">
                             <div class="analytics-summary-card">
@@ -1223,10 +1619,10 @@ async showSubjectAnalytics(subjectName) {
                                 <p class="analytics-card-subtext">${bestDateStr}</p>
                             </div>
                             <div class="analytics-summary-card">
-                                <div class="analytics-card-icon">🕐</div>
-                                <h4 class="analytics-card-value neutral">${tod ? tod.accuracy : '—'}%</h4>
-                                <p class="analytics-card-label">Najlepsza pora dnia</p>
-                                <p class="analytics-card-subtext">${tod ? tod.label : 'Brak danych'}</p>
+                                <div class="analytics-card-icon">⏰</div>
+                                <h4 class="analytics-card-value neutral">${totalStudyTimeFormatted}</h4>
+                                <p class="analytics-card-label">Łączny czas nauki</p>
+                                <p class="analytics-card-subtext">${tod.totalTasks} zadań</p>
                             </div>
                         </div>
                     `;
@@ -1234,30 +1630,56 @@ async showSubjectAnalytics(subjectName) {
                 
                 <!-- 1) Performance Sections -->
                 ${this.renderPerformanceSections(strongCategories, weakCategories)}
-                
-                <!-- 2) Szczegółowe statystyki - ${this.escapeHtml(subject.name)} -->
+
+                <!-- Kategorie - szczegółowa tabela na dole -->
                 ${this.renderSubjectDetailedTable(categoryPerformance, subject.name)}
+            
+                </section>
                 
-                <!-- 3) Dzienna dokładność vs ogólna -->
-                <div class="subject-chart-card" style="grid-column: 1 / -1; background: transparent; border: none; box-shadow: none; padding: 0;">
-                    <div class="enhanced-chart-section">
-                        <div class="enhanced-chart-header">
-                            <h2 class="enhanced-chart-title">📊 Dzienna dokładność vs ogólna</h2>
+                
+                <section class="subject-section" id="section-time-${safeId}">
+                    <div class="subject-section-header"><span class="section-title">Czas</span><button class="btn-mini" data-accordion="toggle">▾</button></div>
+                    <!-- 3) Dzienna dokładność vs ogólna -->
+                    <div class="subject-chart-card" style="grid-column: 1 / -1; background: transparent; border: none; box-shadow: none; padding: 0;">
+                        <div class="enhanced-chart-section">
+                            <div class="enhanced-chart-header">
+                                <h2 class="enhanced-chart-title">📊 Dzienna dokładność vs ogólna</h2>
+                                <div class="chart-subtitle" id="chart-subtitle-${safeId}"></div>
+                            </div>
+                            <div class="enhanced-chart-container" id="daily-accuracy-${safeId}"></div>
+                            <div class="chart-footer" id="chart-footer-${safeId}"></div>
                         </div>
-                        <div class="enhanced-chart-container" id="daily-accuracy-${safeId}"></div>
                     </div>
-                </div>
+                    
+                    <!-- 4) Skuteczność kategorii w czasie -->
+                    <div class="subject-chart-card">
+                        <h4 class="subject-chart-title">🏷️ Skuteczność kategorii w czasie</h4>
+                        <div class="subject-chart" id="category-accuracy-${safeId}"></div>
+                    </div>
+                    
+                    <!-- 5) Analiza czasu -->
+                    <div class="time-analysis-section" id="time-analysis-${safeId}">
+                        <h4 class="subject-chart-title">⏱️ Analiza czasu</h4>
+                        <div class="time-analysis-content"></div>
+                    </div>
+
+                    <!-- 6) Aktywność (mini heatmapa) -->
+                    <div class="subject-chart-card">
+                        <h4 class="subject-chart-title">🔥 Aktywność (ostatnie 90 dni)</h4>
+                        <div id="subject-heatmap-${safeId}"></div>
+                    </div>
+                </section>
                 
-                <!-- 4) Skuteczność kategorii w czasie -->
-                <div class="subject-chart-card">
-                    <h4 class="subject-chart-title">🏷️ Skuteczność kategorii w czasie</h4>
-                    <div class="subject-chart" id="category-accuracy-${safeId}"></div>
-                </div>
+                <section class="subject-section" id="section-sessions-${safeId}">
+                    <div class="subject-section-header"><span class="section-title">Sesje</span><button class="btn-mini" data-accordion="toggle">▾</button></div>
+                    <div class="sessions-list" id="sessions-list-${safeId}"></div>
+                    <div style="margin-top:8px;"><button class="btn-mini" id="sessions-more-${safeId}">Pokaż więcej</button></div>
+                </section>
                 
-                <!-- 5) Analiza czasu -->
-                <div class="time-analysis-section" id="time-analysis-${safeId}">
-                    <h4 class="subject-chart-title">⏱️ Analiza czasu</h4>
-                    <div class="time-analysis-content"></div>
+                <div class="mobile-action-bar" id="mobile-action-bar-${safeId}">
+                    <button class="btn btn-primary" data-action="start-study">Rozpocznij naukę</button>
+                    <button class="btn btn-secondary" data-action="add-task">Dodaj zadanie</button>
+                    <button class="btn btn-outline" data-action="view-sessions">Wszystkie sesje</button>
                 </div>
             </div>
         `;
@@ -1325,16 +1747,26 @@ async showSubjectAnalytics(subjectName) {
     /**
      * Render detailed table for subject
      */
-    renderSubjectDetailedTable(categoryPerformance, subjectName) {
+renderSubjectDetailedTable(categoryPerformance, subjectName) {
+        const safeId = this.getSafeId(subjectName);
+        // Reset category task map for this render
+        this._categoryTaskMap = {};
         return `
-            <div class="detailed-table-section">
+            <div class="detailed-table-section" data-subject-id="${safeId}">
                 <div class="detailed-table-header">
                     <h4 class="detailed-table-title">📋 Szczegółowe statystyki - ${this.escapeHtml(subjectName)}</h4>
                     <p class="detailed-table-subtitle">Kliknij na kategorię, aby zobaczyć listę zadań</p>
+                    <div class="table-controls" id="table-controls-${safeId}">
+                        <input type="search" class="control-select" placeholder="Szukaj kategorii…" id="table-search-${safeId}" aria-label="Szukaj kategorii">
+                        <label class="control-item" style="margin-left:.5rem;">
+                            <input type="checkbox" id="table-one-open-${safeId}">
+                            Tylko jedna sekcja rozwinięta
+                        </label>
+                    </div>
                 </div>
                 
                 <div class="analytics-table-container">
-                    <table class="analytics-table expandable-table">
+                    <table class="analytics-table expandable-table" id="analytics-table-${safeId}">
                         <thead>
                             <tr>
                                 <th>🏷️ Kategoria</th>
@@ -1368,11 +1800,14 @@ async showSubjectAnalytics(subjectName) {
         console.log(`  Tasks count: ${tasksCount}`);
         console.log(`  Tasks array:`, category.tasks);
         
+// Store tasks for lazy render
+        this._categoryTaskMap = this._categoryTaskMap || {};
+        this._categoryTaskMap[categoryId] = category.tasks || [];
         return `
-            <tr class="category-row" data-category="${this.escapeHtml(category.name)}">
+            <tr class="category-row" data-category="${this.escapeHtml(category.name)}" data-target="${categoryId}">
                 <td class="category-name-cell">
                     <div class="category-name-container">
-                        <span class="category-expand-icon" onclick="toggleCategoryTasks('${categoryId}')">▶️</span>
+                        <span class="category-expand-icon" role="button" tabindex="0" aria-expanded="false" aria-controls="${categoryId}" data-toggle="category" data-target="${categoryId}" aria-label="Pokaż zadania dla ${this.escapeHtml(category.name)}">▶️</span>
                         <strong>${this.escapeHtml(category.name)}</strong>
                     </div>
                 </td>
@@ -1386,7 +1821,7 @@ async showSubjectAnalytics(subjectName) {
                     </div>
                 </td>
                 <td class="center">
-                    <button class="expand-tasks-btn" onclick="toggleCategoryTasks('${categoryId}')">
+                    <button class="expand-tasks-btn" type="button" data-toggle="category" data-target="${categoryId}" aria-controls="${categoryId}" aria-expanded="false">
                         <span class="expand-text">Pokaż zadania (${tasksCount})</span>
                     </button>
                 </td>
@@ -1402,9 +1837,7 @@ async showSubjectAnalytics(subjectName) {
                                 <span class="task-stats-item total">📊 Razem: ${category.totalTasks}</span>
                             </div>
                         </div>
-                        <div class="task-list">
-                            ${this.renderTaskList(category.tasks || [])}
-                        </div>
+<div class="task-list" id="${categoryId}-task-list"></div>
                     </div>
                 </td>
             </tr>
@@ -1414,7 +1847,7 @@ async showSubjectAnalytics(subjectName) {
     /**
      * Render individual task list
      */
-    renderTaskList(tasks) {
+renderTaskList(tasks) {
         if (!tasks || tasks.length === 0) {
             return `
                 <div class="no-tasks-message">
@@ -1423,17 +1856,30 @@ async showSubjectAnalytics(subjectName) {
                 </div>
             `;
         }
-        
-        return tasks.map(task => this.renderTaskItem(task)).join('');
+        const BATCH = 10;
+        const initial = tasks.slice(0, BATCH).map(task => this.renderTaskItem(task)).join('');
+        const rest = tasks.slice(BATCH).map(task => this.renderTaskItem(task)).join('');
+        if (tasks.length <= BATCH) return initial;
+        const listId = `more-${Date.now()}-${Math.floor(Math.random()*1000)}`;
+        return `
+            ${initial}
+            <div class="task-list-collapsed" id="${listId}" style="display:none;">
+                ${rest}
+            </div>
+            <div style="margin-top:8px;">
+                <button type="button" class="btn-mini" data-action="show-more" data-target="${listId}">Pokaż więcej (${tasks.length - BATCH})</button>
+            </div>
+        `;
     }
     
     /**
      * Render individual task item
      */
-    renderTaskItem(task) {
+renderTaskItem(task) {
         const isCorrect = this.isTaskCorrect(task);
         const correctnessClass = isCorrect ? 'correct' : 'incorrect';
         const correctnessText = isCorrect ? '✅ Poprawne' : '❌ Niepoprawne';
+        const catBand = this.getCategoryAccentColor((task.categories && task.categories[0]) || task.category || 'Unknown');
         
         // Generate task ID for unique identification
         const taskId = `task-${this.escapeHtml(task.name || 'unnamed').replace(/[^a-zA-Z0-9]/g, '-')}-${Date.now()}`;
@@ -1444,7 +1890,7 @@ async showSubjectAnalytics(subjectName) {
         const timeAgo = this.formatTimeAgo(task.timestamp);
         
         return `
-            <div class="task-item ${correctnessClass}" data-task-id="${taskId}">
+            <div class="task-item ${correctnessClass}" data-task-id="${taskId}" style="border-left-color:${catBand}">
                 <div class="task-header">
                     <div class="task-main-info">
                         <div class="task-title-section">
@@ -1477,6 +1923,12 @@ async showSubjectAnalytics(subjectName) {
                 </div>
             </div>
         `;
+    }
+    
+    getCategoryAccentColor(name){
+        const palette = ['#67e8f9','#60a5fa','#a78bfa','#f472b6','#f47272','#fbbf24','#34d399','#22c55e','#4ade80','#93c5fd'];
+        const idx = Math.abs(this.simpleHash(String(name))) % palette.length;
+        return palette[idx];
     }
     
     /**
@@ -1917,15 +2369,20 @@ async showSubjectAnalytics(subjectName) {
     }
 
     /**
-     * Render time analysis section
+     * Render enhanced time analysis section with time-of-day performance
      */
     renderTimeAnalysis(subject) {
         const safeId = this.getSafeId(subject.name);
         const section = document.getElementById(`time-analysis-${safeId}`);
         if (!section) return;
         const content = section.querySelector('.time-analysis-content') || section;
-        const analysis = this.computeSubjectTimeAnalysis(subject);
-        if (analysis.totalMs <= 0) {
+        
+        // Get both task duration analysis and time-of-day analysis
+        const durationAnalysis = this.computeSubjectTimeAnalysis(subject);
+        const timeOfDayAnalysis = this.computeTimeOfDaySummary(subject.tasks);
+        
+        // If no time data at all, show no data message
+        if (durationAnalysis.totalMs <= 0 && timeOfDayAnalysis.totalStudyTime <= 0) {
             console.warn('[TimeAnalysis] No time data found for subject', subject.name, {
                 sampleTask: (subject.tasks || [])[0]
             });
@@ -1938,26 +2395,95 @@ async showSubjectAnalytics(subjectName) {
             `;
             return;
         }
-        const totalFormatted = this.formatDuration(analysis.totalMs);
-        const avgFormatted = this.formatDuration(analysis.averageTaskMs);
-        const topCats = analysis.byCategory.slice(0, 6).map(cat => `
-            <div class="time-cat-item">
-                <div class="time-cat-name">${this.escapeHtml(cat.name)}</div>
-                <div class="time-cat-values">
-                    <span class="time-total">${this.formatDuration(cat.timeMs)}</span>
-                    <span class="time-sep">·</span>
-                    <span class="time-avg">${this.formatDuration(cat.avgMs)}/zad.</span>
-                    <span class="time-count">(${cat.tasksCount})</span>
+        
+        // Build time summary cards
+        const totalFormatted = Math.max(durationAnalysis.totalMs, timeOfDayAnalysis.totalStudyTime) > 0 ? 
+            this.formatDuration(Math.max(durationAnalysis.totalMs, timeOfDayAnalysis.totalStudyTime)) : '—';
+        const avgFormatted = durationAnalysis.averageTaskMs > 0 ? 
+            this.formatDuration(durationAnalysis.averageTaskMs) : '—';
+        
+        // Build time-of-day performance breakdown
+        const timeOfDayPeriods = timeOfDayAnalysis.periods.map(period => {
+            const accuracyClass = period.accuracy >= 80 ? 'success' : period.accuracy >= 60 ? 'warning' : 'error';
+            const totalTimeFormatted = period.totalTime > 0 ? this.formatDuration(period.totalTime) : '—';
+            const avgTimeFormatted = period.averageTime > 0 ? this.formatDuration(period.averageTime) : '—';
+            
+            return `
+                <div class="time-period-item">
+                    <div class="time-period-header">
+                        <div class="time-period-emoji">${period.emoji}</div>
+                        <div class="time-period-info">
+                            <div class="time-period-name">${period.label}</div>
+                            <div class="time-period-stats">
+                                <span class="accuracy ${accuracyClass}">${period.accuracy}% skuteczność</span>
+                                <span class="task-count">${period.total} zadań</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="time-period-details">
+                        <div class="time-detail">
+                            <span class="time-detail-label">Łączny czas:</span>
+                            <span class="time-detail-value">${totalTimeFormatted}</span>
+                        </div>
+                        <div class="time-detail">
+                            <span class="time-detail-label">Śr. na zadanie:</span>
+                            <span class="time-detail-value">${avgTimeFormatted}</span>
+                        </div>
+                        <div class="time-detail">
+                            <span class="time-detail-label">Poprawne:</span>
+                            <span class="time-detail-value">${period.correct}/${period.total}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Build category breakdown if available
+        const categoryBreakdown = durationAnalysis.byCategory.length > 0 ? `
+            <div class="time-categories-section">
+                <h5 class="time-section-title">⏱️ Czas według kategorii</h5>
+                <div class="time-categories-list">
+                    ${durationAnalysis.byCategory.slice(0, 6).map(cat => `
+                        <div class="time-cat-item">
+                            <div class="time-cat-name">${this.escapeHtml(cat.name)}</div>
+                            <div class="time-cat-values">
+                                <span class="time-total">${this.formatDuration(cat.timeMs)}</span>
+                                <span class="time-sep">·</span>
+                                <span class="time-avg">${this.formatDuration(cat.avgMs)}/zad.</span>
+                                <span class="time-count">(${cat.tasksCount})</span>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
-        `).join('');
+        ` : '';
+        
         content.innerHTML = `
             <div class="time-summary-cards">
-                <div class="time-card"><div class="time-card-title">Czas łącznie</div><div class="time-card-value">${totalFormatted}</div></div>
-                <div class="time-card"><div class="time-card-title">Śr. czas/zadanie</div><div class="time-card-value">${avgFormatted}</div></div>
+                <div class="time-card">
+                    <div class="time-card-title">Czas łącznie</div>
+                    <div class="time-card-value">${totalFormatted}</div>
+                </div>
+                <div class="time-card">
+                    <div class="time-card-title">Śr. czas/zadanie</div>
+                    <div class="time-card-value">${avgFormatted}</div>
+                </div>
+                <div class="time-card">
+                    <div class="time-card-title">Najlepsza pora</div>
+                    <div class="time-card-value">${timeOfDayAnalysis.best ? timeOfDayAnalysis.best.emoji + ' ' + timeOfDayAnalysis.best.accuracy + '%' : '—'}</div>
+                </div>
             </div>
-            <div class="time-categories-list">${topCats}</div>
+            
+            <div class="time-periods-section">
+                <h5 class="time-section-title">🕐 Analiza skuteczności według pory dnia</h5>
+                <div class="time-periods-grid">
+                    ${timeOfDayPeriods}
+                </div>
+            </div>
+            
+            ${categoryBreakdown}
         `;
+        
         // Update hero card time if present
         const heroTime = document.getElementById(`hero-time-${safeId}`);
         if (heroTime) {
@@ -2044,9 +2570,830 @@ async showSubjectAnalytics(subjectName) {
             }
         }
     }
+
+    enhanceSubjectTableInteractions(safeId) {
+        const section = document.querySelector(`.detailed-table-section[data-subject-id="${safeId}"]`);
+        if (!section) return;
+        const table = section.querySelector('table.analytics-table');
+        // Add data-labels for mobile
+        if (table) {
+            const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+            table.querySelectorAll('tbody tr.category-row').forEach(row => {
+                row.querySelectorAll('td').forEach((td, idx) => {
+                    td.setAttribute('data-label', headers[idx] || '');
+                });
+            });
+        }
+        // Delegated clicks
+        section.addEventListener('click', (e) => {
+            const toggleEl = e.target.closest('[data-toggle="category"]');
+            if (toggleEl) {
+                const targetId = toggleEl.getAttribute('data-target');
+                this.toggleCategoryTasksAccessible(targetId, section, safeId);
+                e.preventDefault();
+                return;
+            }
+            const showMoreBtn = e.target.closest('[data-action="show-more"]');
+            if (showMoreBtn) {
+                const target = document.getElementById(showMoreBtn.getAttribute('data-target'));
+                if (target) {
+                    const hidden = target.style.display === 'none' || target.style.display === '';
+                    target.style.display = hidden ? 'block' : 'none';
+                    showMoreBtn.textContent = hidden ? 'Pokaż mniej' : showMoreBtn.textContent.replace('Pokaż mniej', 'Pokaż więcej');
+                }
+                e.preventDefault();
+                return;
+            }
+            const row = e.target.closest('tr.category-row');
+            if (row && e.target.tagName !== 'BUTTON') {
+                const targetId = row.getAttribute('data-target');
+                if (targetId) this.toggleCategoryTasksAccessible(targetId, section, safeId);
+            }
+        });
+        // Keyboard accessibility (Enter/Space toggles)
+        section.addEventListener('keydown', (e) => {
+            const key = e.key;
+            // Focus search with '/'
+            if (key === '/' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+                const searchEl = section.querySelector(`#table-search-${safeId}`);
+                if (searchEl) {
+                    e.preventDefault();
+                    searchEl.focus();
+                }
+                return;
+            }
+            const toggleEl = e.target.closest && e.target.closest('[data-toggle="category"]');
+            if (toggleEl && (key === 'Enter' || key === ' ')) {
+                e.preventDefault();
+                const targetId = toggleEl.getAttribute('data-target');
+                this.toggleCategoryTasksAccessible(targetId, section, safeId);
+            }
+        });
+
+        // Search filter
+        const search = section.querySelector(`#table-search-${safeId}`);
+        if (search) {
+            search.addEventListener('input', () => {
+                const q = search.value.toLowerCase();
+                section.querySelectorAll('tbody tr.category-row').forEach(row => {
+                    const nameEl = row.querySelector('.category-name-container strong');
+                    const name = nameEl ? nameEl.textContent.toLowerCase() : '';
+                    const match = name.includes(q);
+                    row.style.display = match ? '' : 'none';
+                    const targetId = row.getAttribute('data-target');
+                    const details = targetId ? document.getElementById(targetId) : null;
+                    if (details && !match) details.style.display = 'none';
+                });
+            });
+        }
+    }
+
+    /**
+     * Resolve subject accent color
+     */
+getSubjectAccentColor(name) {
+        // Prefer subject-provided color if available
+        try {
+            const subj = (this.subjects || []).find(s => String(s.name).toLowerCase() === String(name).toLowerCase());
+            if (subj && subj.color) return subj.color;
+        } catch(_) {}
+        // Fallback to ChartsManager palette
+        const palettes = (this.chartsManager && this.chartsManager.subjectColors) || ['#667eea','#764ba2','#10b981','#f59e0b','#ef4444','#3b82f6','#8b5cf6','#06b6d4','#84cc16','#f97316','#ec4899','#6366f1'];
+        const idx = Math.abs(this.simpleHash(String(name))) % palettes.length;
+        return palettes[idx];
+    }
+
+    simpleHash(str){ let h=0; for(let i=0;i<str.length;i++){ h=((h<<5)-h)+str.charCodeAt(i); h|=0; } return h; }
+
+    /**
+     * Enhance subnav, timeframe, filters, chips
+     */
+    enhanceSubjectSubnavAndFilters(safeId, subject) {
+        const sectionRoot = document.querySelector('.subject-analytics-section');
+        if (!sectionRoot) return;
+
+        // Subnav handling
+        const subnav = document.getElementById(`subnav-${safeId}`);
+        if (subnav) {
+            const scrollKey = (sub)=>`subjectScroll:${safeId}:${sub}`;
+            subnav.addEventListener('click', (e) => {
+                const btn = e.target.closest('.subnav-pill');
+                if (!btn) return;
+                const target = btn.getAttribute('data-subsection');
+                if (!target) return;
+                // Update aria-current
+                subnav.querySelectorAll('.subnav-pill').forEach(p=>p.setAttribute('aria-current','false'));
+                btn.setAttribute('aria-current','page');
+                // Save previous scroll
+                const container = document.querySelector('.analytics-right-panel') || window;
+                const activeBtn = subnav.querySelector('.subnav-pill[aria-current="page"]');
+                const prevSub = activeBtn ? activeBtn.getAttribute('data-subsection') : 'overview';
+                try { sessionStorage.setItem(scrollKey(prevSub), String((document.querySelector('.analytics-right-panel')?.scrollTop) || window.scrollY || 0)); } catch(_){ }
+
+// Toggle sections
+                ['overview','time','sessions'].forEach(key => {
+                    const el = document.getElementById(`section-${key}-${safeId}`);
+                    if (el) el.classList.toggle('active', key===target);
+                });
+                // Save subsection
+                const storageKey = `subjectFilters:${safeId}`;
+                let saved = {};
+                try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(_) { saved={}; }
+                saved.subsection = target; localStorage.setItem(storageKey, JSON.stringify(saved));
+                // Restore scroll for target
+                const savedScroll = Number(sessionStorage.getItem(scrollKey(target)) || 0);
+                if (container === window) window.scrollTo({ top: savedScroll });
+                else container.scrollTo({ top: savedScroll });
+            });
+        }
+
+        // Delegated interactions for recent widgets, accordions, sessions
+        sectionRoot.addEventListener('click', (e) => {
+            // Accordion toggles (mobile only)
+            const accBtn = e.target.closest('button[data-accordion="toggle"]');
+            if (accBtn) {
+                const sec = accBtn.closest('.subject-section');
+                if (sec && window.innerWidth <= 768) {
+                    sec.classList.toggle('collapsed');
+                }
+            }
+            // Recent details toggle
+            const recentBtn = e.target.closest('button[data-action="recent-details"]');
+            if (recentBtn) {
+                const cid = recentBtn.getAttribute('data-container');
+                if (cid) this.toggleRecentDetails(cid);
+            }
+            // Sessions: load more
+            const moreBtn = e.target.closest(`#sessions-more-${safeId}`);
+            if (moreBtn) {
+                e.preventDefault();
+                this._sessionsShown = this._sessionsShown || {};
+                const cur = this._sessionsShown[safeId] || 5;
+                this._sessionsShown[safeId] = cur + 5;
+                const storageKey = `subjectFilters:${safeId}`;
+                let saved = {};
+                try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(_) { saved={}; }
+                this.refreshSubjectTimeDependentViews(safeId, subject, saved);
+            }
+        });
+        sectionRoot.addEventListener('change', (e) => {
+            const cb = e.target.closest('input[type="checkbox"][data-action="recent-only-incorrect"]');
+            if (cb) {
+                const cid = cb.getAttribute('data-container');
+                this.setRecentFilterIncorrect(cid, cb.checked);
+            }
+        });
+
+        // Load saved state
+        const storageKey = `subjectFilters:${safeId}`;
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(_){ saved = {}; }
+
+        // Timeframe
+        const tfGroup = document.getElementById(`timeframe-${safeId}`);
+        const defaultRange = saved.range || '30';
+        if (tfGroup) {
+            tfGroup.querySelectorAll('.time-btn').forEach(btn => {
+                const r = btn.getAttribute('data-range');
+                btn.classList.toggle('active', String(r) === String(defaultRange));
+                btn.addEventListener('click', () => {
+                    tfGroup.querySelectorAll('.time-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                    saved.range = r; localStorage.setItem(storageKey, JSON.stringify(saved));
+                    this.refreshSubjectTimeDependentViews(safeId, subject, saved);
+                });
+            });
+        }
+
+        // Filter chips (correct/incorrect + selectors)
+        const filtersEl = document.getElementById(`filters-${safeId}`);
+        saved.filters = saved.filters || {};
+        if (filtersEl) {
+            const ensureCategoryChip = () => {
+                const existing = filtersEl.querySelector('[data-filter-cat]');
+                if (saved.category) {
+                    if (!existing) {
+                        const chip = document.createElement('button');
+                        chip.className = 'filter-chip active';
+                        chip.setAttribute('data-filter-cat','1');
+                        chip.setAttribute('aria-label', `Kategoria: ${saved.category}`);
+                        chip.textContent = `# ${saved.category} ✕`;
+                        chip.addEventListener('click', () => {
+                            saved.category = null;
+                            localStorage.setItem(storageKey, JSON.stringify(saved));
+                            chip.remove();
+                            // Update count label
+                            const ft = document.getElementById(`filters-toggle-${safeId}`);
+                            if (ft) ft.textContent = `Filtry (${(saved.filters?.correct?1:0)+(saved.filters?.incorrect?1:0)+(saved.category?1:0)+(saved.location?1:0)+(saved.difficulty?1:0)})`;
+this.renderActiveFilters(safeId, subject, saved);
+                            this.debounceRefreshSubject(safeId, subject, saved);
+                        });
+                        filtersEl.appendChild(chip);
+                    } else {
+                        existing.textContent = `# ${saved.category} ✕`;
+                        existing.classList.add('active');
+                    }
+                } else if (existing) {
+                    existing.remove();
+                }
+            };
+
+            const ensureLocationChip = () => {
+                const existing = filtersEl.querySelector('[data-filter-loc]');
+                if (saved.location) {
+                    if (!existing) {
+                        const chip = document.createElement('button');
+                        chip.className = 'filter-chip active';
+                        chip.setAttribute('data-filter-loc','1');
+                        chip.setAttribute('aria-label', `Miejsce: ${saved.location}`);
+                        chip.textContent = `📍 ${saved.location} ✕`;
+                        chip.addEventListener('click', () => {
+                            saved.location = null;
+                            localStorage.setItem(storageKey, JSON.stringify(saved));
+                            chip.remove();
+                            this.debounceRefreshSubject(safeId, subject, saved);
+                        });
+                        filtersEl.appendChild(chip);
+                    } else {
+                        existing.textContent = `📍 ${saved.location} ✕`;
+                        existing.classList.add('active');
+                    }
+                } else if (existing) {
+                    existing.remove();
+                }
+            };
+
+            const ensureDifficultyChip = () => {
+                const existing = filtersEl.querySelector('[data-filter-diff]');
+                if (saved.difficulty) {
+                    if (!existing) {
+                        const chip = document.createElement('button');
+                        chip.className = 'filter-chip active';
+                        chip.setAttribute('data-filter-diff','1');
+                        chip.setAttribute('aria-label', `Trudność: ${saved.difficulty}`);
+                        chip.textContent = `⭐ ${saved.difficulty} ✕`;
+                        chip.addEventListener('click', () => {
+                            saved.difficulty = null;
+                            localStorage.setItem(storageKey, JSON.stringify(saved));
+                            chip.remove();
+                            // Update count label
+                            const ft = document.getElementById(`filters-toggle-${safeId}`);
+                            if (ft) ft.textContent = `Filtry (${(saved.filters?.correct?1:0)+(saved.filters?.incorrect?1:0)+(saved.category?1:0)+(saved.location?1:0)+(saved.difficulty?1:0)})`;
+this.renderActiveFilters(safeId, subject, saved);
+                            this.debounceRefreshSubject(safeId, subject, saved);
+                        });
+                        filtersEl.appendChild(chip);
+                    } else {
+                        existing.textContent = `⭐ ${saved.difficulty} ✕`;
+                        existing.classList.add('active');
+                    }
+                } else if (existing) {
+                    existing.remove();
+                }
+            };
+
+            // Base filter chips (correct/incorrect)
+            filtersEl.querySelectorAll('.filter-chip').forEach(chip => {
+                const key = chip.getAttribute('data-filter');
+                if (key) chip.classList.toggle('active', !!saved.filters[key]);
+                chip.addEventListener('click', () => {
+                    if (chip.hasAttribute('data-filter')) {
+                        const current = !!saved.filters[key];
+                        saved.filters[key] = !current;
+                        chip.classList.toggle('active', !current);
+                        chip.setAttribute('aria-pressed', String(!current));
+                        localStorage.setItem(storageKey, JSON.stringify(saved));
+                        // Update count label
+                        const ft = document.getElementById(`filters-toggle-${safeId}`);
+                if (ft) ft.textContent = `Filtry (${(saved.filters?.correct?1:0)+(saved.filters?.incorrect?1:0)+(saved.category?1:0)+(saved.location?1:0)+(saved.difficulty?1:0)})`;
+this.renderActiveFilters(safeId, subject, saved);
+                        this.debounceRefreshSubject(safeId, subject, saved);
+                    }
+                    // Selector chips open pickers
+                    if (chip.classList.contains('selector')) {
+                        const selKey = chip.getAttribute('data-select');
+                        if (selKey === 'location') this.openLocationPicker(safeId, subject, chip, saved, storageKey);
+                        if (selKey === 'difficulty') this.openDifficultyPicker(safeId, subject, chip, saved, storageKey);
+                    }
+                });
+            });
+
+            ensureCategoryChip();
+            ensureLocationChip();
+            ensureDifficultyChip();
+            // Keep active filters row in sync
+            this.renderActiveFilters(safeId, subject, saved);
+        }
+
+        // Timeframe compact dropdown (mobile)
+        const tfToggle = document.getElementById(`timeframe-toggle-${safeId}`);
+        if (tfToggle) {
+            tfToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.openTimeframePicker(safeId, subject, tfToggle, saved, storageKey);
+            });
+        }
+
+// Filters panel toggle
+        const filtersToggle = document.getElementById(`filters-toggle-${safeId}`);
+        const filtersPanel = document.getElementById(`filters-panel-${safeId}`);
+        const updateFiltersCount = () => {
+            const count = (saved.filters?.correct?1:0) + (saved.filters?.incorrect?1:0) + (saved.category?1:0) + (saved.location?1:0) + (saved.difficulty?1:0);
+            if (filtersToggle) filtersToggle.textContent = `Filtry (${count})`;
+        };
+        if (filtersToggle && filtersPanel) {
+            filtersToggle.addEventListener('click', () => {
+                const isHidden = filtersPanel.hasAttribute('hidden');
+                if (isHidden) filtersPanel.removeAttribute('hidden'); else filtersPanel.setAttribute('hidden','');
+                filtersToggle.setAttribute('aria-expanded', String(isHidden));
+            });
+        }
+        updateFiltersCount();
+this.renderActiveFilters(safeId, subject, saved);
+
+        // Initial render of time-dependent views
+        this.debounceRefreshSubject(safeId, subject, saved);
+    }
+
+    debounceRefreshSubject(safeId, subject, saved){
+        this._refreshTimers = this._refreshTimers || {};
+        if (this._refreshTimers[safeId]) clearTimeout(this._refreshTimers[safeId]);
+        this._refreshTimers[safeId] = setTimeout(() => {
+            this.refreshSubjectTimeDependentViews(safeId, subject, saved);
+        }, 150);
+    }
+
+    /**
+     * Refresh charts, top categories, cloud using timeframe and filters
+     */
+    refreshSubjectTimeDependentViews(safeId, subject, state){
+        const tasks = this.applySubjectFilters(subject.tasks, state);
+        // Set skeletons before chart render
+        this.setChartSkeleton(`daily-accuracy-${safeId}`);
+        this.setChartSkeleton(`category-accuracy-${safeId}`);
+        // Update time analysis (with filtered tasks)
+        if (document.getElementById(`time-analysis-${safeId}`)) this.renderTimeAnalysis({ ...subject, tasks });
+        // Update sessions list
+        this.renderSessionsWithPagination(safeId, tasks);
+
+        // Update subtitle/footer
+        const subtitle = document.getElementById(`chart-subtitle-${safeId}`);
+        if (subtitle) {
+            const parts = [];
+            parts.push(`Zakres: ${this.describeRange(state.range || '30')}`);
+            const actFilters = [];
+            if (state.filters?.correct) actFilters.push('Poprawne');
+            if (state.filters?.incorrect) actFilters.push('Błędne');
+            subtitle.textContent = (actFilters.length ? `Filtry: ${actFilters.join(', ')}` : 'Bez filtrów') + ' • ' + parts.join(' · ');
+        }
+        const footer = document.getElementById(`chart-footer-${safeId}`);
+        if (footer) footer.textContent = `Zadań: ${tasks.length}`;
+
+        // Rebuild charts
+        if (this.chartsManager) {
+            this.chartsManager.createDailyAccuracyWithOverallLineChart(
+                tasks,
+                subject.stats?.correctPercentage || 0,
+                `daily-accuracy-${safeId}`
+            );
+            this.chartsManager.createCategoryAccuracyLineChart(
+                tasks,
+                `category-accuracy-${safeId}`
+            );
+        }
+
+        // Render top categories
+        const topWrap = document.getElementById(`top-categories-${safeId}`);
+        if (topWrap) topWrap.innerHTML = this.renderTopCategories(tasks, subject.name);
+        
+        // Update KPI diffs (overview card deltas based on timeframe)
+        this.updateKpiDiffs(safeId, subject, state, tasks);
+
+        // Render category chips cloud
+        const cloud = document.getElementById(`category-cloud-${safeId}`);
+        if (cloud) {
+            cloud.innerHTML = this.renderCategoryCloud(tasks);
+            cloud.addEventListener('click', (e) => {
+                const chip = e.target.closest('.category-chip');
+                if (!chip) return;
+                const selected = chip.getAttribute('data-category');
+                // Save category filter and update filter chips
+                const storageKey = `subjectFilters:${safeId}`;
+                let savedState = {};
+                try { savedState = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(_) { savedState={}; }
+                savedState.category = selected;
+                localStorage.setItem(storageKey, JSON.stringify(savedState));
+                const filtersEl = document.getElementById(`filters-${safeId}`);
+                if (filtersEl) {
+                    const exist = filtersEl.querySelector('[data-filter-cat]');
+                    if (!exist) {
+                        const catChip = document.createElement('button');
+                        catChip.className = 'filter-chip active';
+                        catChip.setAttribute('data-filter-cat','1');
+                        catChip.textContent = `# ${selected} ✕`;
+                        catChip.addEventListener('click', () => {
+                            savedState.category = null;
+                            localStorage.setItem(storageKey, JSON.stringify(savedState));
+                            catChip.remove();
+                            this.debounceRefreshSubject(safeId, subject, savedState);
+                        });
+                        filtersEl.appendChild(catChip);
+                    } else {
+                        exist.textContent = `# ${selected} ✕`;
+                        exist.classList.add('active');
+                    }
+                }
+                // Update count label
+                const ft = document.getElementById(`filters-toggle-${safeId}`);
+                if (ft) ft.textContent = `Filtry (${(savedState.filters?.correct?1:0)+(savedState.filters?.incorrect?1:0)+(savedState.category?1:0)+(savedState.location?1:0)+(savedState.difficulty?1:0)})`;
+                this.renderActiveFilters(safeId, subject, savedState);
+                this.debounceRefreshSubject(safeId, subject, savedState);
+            });
+        }
+    }
+
+    openTimeframePicker(safeId, subject, anchorBtn, saved, storageKey){
+        const ranges = [
+            { key: '7', label: 'Tydzień' },
+            { key: '30', label: '30 dni' },
+            { key: '90', label: '90 dni' },
+            { key: 'all', label: 'Wszystko' }
+        ];
+        this.openSimplePicker(anchorBtn, ranges, saved.range || '30', (val) => {
+            saved.range = val;
+            localStorage.setItem(storageKey, JSON.stringify(saved));
+            // Update active styles in full group
+            const tfGroup = document.getElementById(`timeframe-${safeId}`);
+            if (tfGroup) tfGroup.querySelectorAll('.time-btn').forEach(b=> b.classList.toggle('active', String(b.getAttribute('data-range'))===String(val)));
+            this.debounceRefreshSubject(safeId, subject, saved);
+        });
+    }
+
+    openLocationPicker(safeId, subject, anchorBtn, saved, storageKey){
+        // Collect unique non-empty locations from subject tasks
+        const locations = Array.from(new Set((subject.tasks||[])
+            .map(t => (t.location||'').trim())
+            .filter(x => x)));
+        const options = [{ key: '', label: 'Wyczyść' }, ...locations.map(l => ({ key: l, label: l }))];
+        this.openSimplePicker(anchorBtn, options, saved.location || '', (val) => {
+            saved.location = val || null;
+            localStorage.setItem(storageKey, JSON.stringify(saved));
+            this.debounceRefreshSubject(safeId, subject, saved);
+        });
+    }
+
+    openDifficultyPicker(safeId, subject, anchorBtn, saved, storageKey){
+        const diffs = ['Łatwy','Średni','Trudny'];
+        const options = [{ key: '', label: 'Wyczyść' }, ...diffs.map(d => ({ key: d, label: d }))];
+        this.openSimplePicker(anchorBtn, options, saved.difficulty || '', (val) => {
+            saved.difficulty = val || null;
+            localStorage.setItem(storageKey, JSON.stringify(saved));
+            this.debounceRefreshSubject(safeId, subject, saved);
+        });
+    }
+
+    openSimplePicker(anchorBtn, options, current, onSelect){
+        // Remove existing picker
+        document.querySelectorAll('.filter-picker').forEach(p => p.remove());
+        const picker = document.createElement('div');
+        picker.className = 'filter-picker';
+        picker.setAttribute('role','menu');
+        picker.innerHTML = options.map(o => `<button type="button" role="menuitem" class="picker-item${String(o.key)===String(current)?' active':''}" data-val="${o.key}">${o.label}</button>`).join('');
+        // Position relative to anchor
+        const rect = anchorBtn.getBoundingClientRect();
+        picker.style.position = 'fixed';
+        picker.style.top = `${rect.bottom + 6}px`;
+        picker.style.left = `${Math.max(8, Math.min(window.innerWidth-220, rect.left))}px`;
+        document.body.appendChild(picker);
+        // Event handling
+        const onBodyClick = (e) => {
+            if (!picker.contains(e.target) && e.target !== anchorBtn) {
+                picker.remove();
+                document.removeEventListener('click', onBodyClick, true);
+            }
+        };
+        document.addEventListener('click', onBodyClick, true);
+        picker.addEventListener('click', (e) => {
+            const it = e.target.closest('.picker-item');
+            if (!it) return;
+            const val = it.getAttribute('data-val');
+            onSelect(val);
+            picker.remove();
+            document.removeEventListener('click', onBodyClick, true);
+        });
+    }
+
+renderActiveFilters(safeId, subject, state){
+        const row = document.getElementById(`active-filters-${safeId}`);
+        if (!row) return;
+        const parts = [];
+        if (state.filters?.correct) parts.push({ key:'correct', label:'Poprawne' });
+        if (state.filters?.incorrect) parts.push({ key:'incorrect', label:'Błędne' });
+        if (state.category) parts.push({ key:'category', label:`# ${state.category}` });
+        if (state.location) parts.push({ key:'location', label:`📍 ${state.location}` });
+        if (state.difficulty) parts.push({ key:'difficulty', label:`⭐ ${state.difficulty}` });
+        if (!parts.length) { row.innerHTML = ''; return; }
+        row.innerHTML = parts.map(p => `<button type="button" class="filter-chip active small" data-afkey="${p.key}" aria-label="Usuń filtr ${p.label}" title="Usuń filtr">${p.label} ✕</button>`).join('');
+        row.querySelectorAll('button[data-afkey]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const k = btn.getAttribute('data-afkey');
+                const storageKey = `subjectFilters:${safeId}`;
+                let saved = {};
+                try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(_) { saved = {}; }
+                if (k==='correct' || k==='incorrect') { saved.filters = saved.filters || {}; saved.filters[k] = false; }
+                if (k==='category') saved.category = null;
+                if (k==='location') saved.location = null;
+                if (k==='difficulty') saved.difficulty = null;
+                localStorage.setItem(storageKey, JSON.stringify(saved));
+                this.renderActiveFilters(safeId, subject, saved);
+                this.debounceRefreshSubject(safeId, subject, saved);
+                const ft = document.getElementById(`filters-toggle-${safeId}`);
+                if (ft) ft.textContent = `Filtry (${(saved.filters?.correct?1:0)+(saved.filters?.incorrect?1:0)+(saved.category?1:0)+(saved.location?1:0)+(saved.difficulty?1:0)})`;
+            });
+        });
+    }
+
+    describeRange(r){
+        if (r==='7') return 'Tydzień';
+        if (r==='30') return '30 dni';
+        if (r==='90') return '90 dni';
+        return 'Cały okres';
+    }
+
+    applySubjectFilters(tasks, state){
+        let out = tasks || [];
+        // timeframe
+        const r = state.range || '30';
+        if (r !== 'all') {
+            const days = parseInt(r, 10);
+            const minDate = new Date();
+            minDate.setDate(minDate.getDate() - days);
+            out = out.filter(t => {
+                const ts = new Date(t.start_time || t.timestamp || new Date());
+                return ts >= minDate;
+            });
+        }
+        // correctness filters
+        const wantCorrect = !!state.filters?.correct;
+        const wantIncorrect = !!state.filters?.incorrect;
+        if (wantCorrect !== wantIncorrect) { // only one active
+            out = out.filter(t => this.isTaskCorrect(t) === wantCorrect);
+        }
+        // category filter
+        if (state.category) {
+            out = out.filter(t => (t.categories && t.categories.length ? t.categories : [t.category || 'Unknown']).some(c => String(c)===String(state.category)));
+        }
+        // location filter
+        if (state.location) {
+            out = out.filter(t => (t.location || '').toLowerCase() === String(state.location).toLowerCase());
+        }
+        // difficulty filter (resolve via categories metadata if available)
+        if (state.difficulty) {
+            try {
+                const subjName = (out[0]?.subject) || '';
+                const catSet = new Set((this.categories||[])
+                    .filter(c => (!subjName || !c.subject || c.subject === subjName))
+                    .filter(c => String(c.difficulty).toLowerCase() === String(state.difficulty).toLowerCase())
+                    .map(c => c.name));
+                out = out.filter(t => {
+                    const cats = (t.categories && t.categories.length ? t.categories : [t.category || 'Unknown']);
+                    return cats.some(c => catSet.has(c));
+                });
+            } catch(_) { /* ignore */ }
+        }
+        return out;
+    }
+
+    renderTopCategories(tasks, subjectName){
+        // Aggregate by category
+        const map = new Map();
+        (tasks||[]).forEach(t => {
+            const cats = (t.categories && t.categories.length ? t.categories : [t.category || 'Unknown']);
+            cats.forEach(c => {
+                const m = map.get(c) || { name:c, total:0, correct:0 };
+                m.total++;
+                if (this.isTaskCorrect(t)) m.correct++;
+                map.set(c, m);
+            });
+        });
+        const rows = Array.from(map.values()).sort((a,b)=> (b.correct/b.total)-(a.correct/a.total)).slice(0,8);
+        if (!rows.length) return '<div class="placeholder-text">Brak danych kategorii</div>';
+        const maxTotal = Math.max(...rows.map(r=>r.total));
+        return rows.map(r=>{
+            const pct = r.total>0 ? Math.round((r.correct/r.total)*100) : 0;
+            const width = maxTotal>0 ? Math.max(6, Math.round(r.total/maxTotal*100)) : 0;
+            const inc = Math.max(0, r.total - r.correct);
+            const corrWidth = maxTotal>0 ? Math.round((r.correct / maxTotal) * 100) : 0;
+            const incWidth = maxTotal>0 ? Math.round((inc / maxTotal) * 100) : 0;
+            return `
+                <div class="top-cat-row" title="${this.escapeHtml(r.name)}: ${pct}% (${r.correct}/${r.total})">
+                    <div class="top-cat-name">${this.escapeHtml(r.name)}</div>
+                    <div class="top-cat-bar">
+                        <div class="top-cat-fill-corr" style="width:${corrWidth}%"></div>
+                        <div class="top-cat-fill-inc" style="width:${incWidth}%"></div>
+                    </div>
+                    <div class="top-cat-value">${pct}%</div>
+                </div>`;
+        }).join('');
+    }
+
+    setChartSkeleton(containerId){
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = '<div class="skeleton chart-loading"></div>';
+    }
+
+    renderCategoryCloud(tasks){
+        const freq = new Map();
+        (tasks||[]).forEach(t => {
+            const cats = (t.categories && t.categories.length ? t.categories : [t.category || 'Unknown']);
+            cats.forEach(c => freq.set(c, (freq.get(c)||0)+1));
+        });
+        const entries = Array.from(freq.entries()).sort((a,b)=>b[1]-a[1]).slice(0,20);
+        if (!entries.length) return '<div class="placeholder-text">Brak kategorii</div>';
+        const max = entries[0][1];
+        return entries.map(([name,count])=>{
+            const scale = 0.85 + (count/max)*0.6; // font scale
+            return `<span class="category-chip" data-category="${this.escapeHtml(name)}" style="font-size:${scale}rem" title="${this.escapeHtml(name)} (${count})">${this.escapeHtml(name)}</span>`;
+        }).join('');
+    }
+
+    /**
+     * Build daily activity last 90 days for heatmap
+     */
+    injectBackToTop(){
+        if (document.querySelector('.back-to-top')) return;
+        const btn = document.createElement('button');
+        btn.className = 'back-to-top';
+        btn.setAttribute('aria-label','Powrót na górę');
+        btn.textContent = '↑';
+        document.body.appendChild(btn);
+        btn.addEventListener('click', () => {
+            const container = document.querySelector('.analytics-right-panel') || window;
+            if (container === window) window.scrollTo({ top: 0, behavior: 'smooth' });
+            else container.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        // Show/hide on scroll
+        const onScroll = () => {
+            const scTop = (document.querySelector('.analytics-right-panel')?.scrollTop) || window.scrollY || 0;
+            btn.classList.toggle('show', scTop > 300);
+        };
+        (document.querySelector('.analytics-right-panel') || window).addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    }
+
+    setupSubjectScrollUX(){
+        const hdr = document.querySelector('.subject-sticky-header');
+        if (!hdr) return;
+        const container = document.querySelector('.analytics-right-panel') || window;
+        const onScroll = () => {
+            const scTop = (document.querySelector('.analytics-right-panel')?.scrollTop) || window.scrollY || 0;
+            hdr.classList.toggle('compact', scTop > 120);
+        };
+        container.addEventListener('scroll', onScroll, { passive: true });
+        onScroll();
+    }
+
+    buildDailyActivity(tasks) {
+        const days = 90;
+        const today = new Date();
+        // Normalize to local midnight for stable date keys
+        const midnight = (d) => { const nd = new Date(d); nd.setHours(0,0,0,0); return nd; };
+        const data = [];
+        // Build a map for counts
+        const counts = new Map();
+        (tasks || []).forEach(t => {
+            const ts = t.start_time || t.timestamp || new Date().toISOString();
+            const d = midnight(new Date(ts));
+            const key = d.toISOString().split('T')[0];
+            counts.set(key, (counts.get(key) || 0) + 1);
+        });
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            const key = midnight(d).toISOString().split('T')[0];
+            const cnt = counts.get(key) || 0;
+            data.push({ date: key, tasks: cnt, active: cnt > 0 });
+        }
+        return data;
+    }
+
+    /**
+     * Toggle with ARIA and optional single-open behavior
+     */
+    toggleCategoryTasksAccessible(categoryId, scopeEl, safeId) {
+        const detailsRow = document.getElementById(categoryId);
+        if (!detailsRow) return;
+        const isVisible = detailsRow.style.display !== 'none';
+        const oneOpen = scopeEl.querySelector(`#table-one-open-${safeId}`)?.checked;
+        // If only one open, close others
+        if (!isVisible && oneOpen) {
+            scopeEl.querySelectorAll('tr.task-details-row').forEach(r => {
+                if (r.id !== categoryId) r.style.display = 'none';
+            });
+            scopeEl.querySelectorAll('[data-toggle="category"][aria-expanded="true"]').forEach(el => el.setAttribute('aria-expanded', 'false'));
+            scopeEl.querySelectorAll('.category-expand-icon').forEach(icon => { if (icon.getAttribute('data-target') !== categoryId) icon.textContent = '▶️'; });
+        }
+        // Toggle target
+        if (!isVisible) {
+            // Lazy-render task list on first open
+            const list = document.getElementById(`${categoryId}-task-list`);
+            if (list && list.innerHTML.trim() === '') {
+                const tasks = (this._categoryTaskMap && this._categoryTaskMap[categoryId]) ? this._categoryTaskMap[categoryId] : [];
+                list.innerHTML = this.renderTaskList(tasks);
+            }
+        }
+        detailsRow.style.display = isVisible ? 'none' : (window.innerWidth <= 768 ? 'block' : 'table-row');
+        // Update all toggles pointing to this target
+        scopeEl.querySelectorAll(`[data-toggle="category"][data-target="${categoryId}"]`).forEach(el => {
+            const newState = (!isVisible).toString();
+            el.setAttribute('aria-expanded', newState);
+            if (el.classList.contains('category-expand-icon')) {
+                el.textContent = isVisible ? '▶️' : '🔽';
+            }
+            const expandText = el.querySelector('.expand-text');
+            if (expandText) {
+                expandText.textContent = expandText.textContent.includes('Pokaż') ? expandText.textContent.replace('Pokaż', 'Ukryj') : expandText.textContent.replace('Ukryj', 'Pokaż');
+            }
+        });
+    }
+
+    // Build sessions from tasks (group by date)
+    buildSessions(tasks) {
+const byDay = new Map();
+        (tasks||[]).forEach(t => {
+            const ts = new Date(t.start_time || t.timestamp || Date.now());
+            const key = ts.toISOString().slice(0,10);
+            const entry = byDay.get(key) || { date:key, tasks:0, correct:0, incorrect:0, durationMs:0 };
+            entry.tasks++;
+            if (this.isTaskCorrect(t)) entry.correct++; else entry.incorrect++;
+            if (t.start_time && t.end_time) {
+                const d = new Date(t.end_time) - new Date(t.start_time);
+                if (isFinite(d) && d > 0) entry.durationMs += d;
+            }
+            byDay.set(key, entry);
+        });
+        return Array.from(byDay.values()).sort((a,b)=> b.date.localeCompare(a.date));
+    }
+
+    renderSessionsWithPagination(safeId, tasks) {
+        const list = document.getElementById(`sessions-list-${safeId}`);
+        if (!list) return;
+        const sessions = this.buildSessions(tasks);
+        this._sessionsShown = this._sessionsShown || {};
+        const limit = this._sessionsShown[safeId] || 5;
+        const shown = sessions.slice(0, limit);
+        if (!sessions.length) {
+            list.innerHTML = '<div class="placeholder-text">Brak sesji do wyświetlenia</div>';
+        } else {
+list.innerHTML = shown.map(s => {
+                const acc = s.tasks>0 ? Math.round((s.correct/s.tasks)*100) : 0;
+                const dur = s.durationMs>0 ? this.formatDuration(s.durationMs) : '—';
+                return `<div class="session-row">
+                    <div class="session-date">${s.date}</div>
+                    <div class="session-stats">⏱ ${dur} • ${s.correct}/${s.tasks} • ${acc}%</div>
+                </div>`;
+            }).join('');
+        }
+        const moreBtn = document.getElementById(`sessions-more-${safeId}`);
+        if (moreBtn) {
+            moreBtn.style.display = (limit < sessions.length) ? '' : 'none';
+        }
+    }
+
+    // Update KPI cards with simple deltas between current and previous equal period
+    updateKpiDiffs(safeId, subject, state, currentTasks){
+        const range = String(state.range || '30');
+        if (range === 'all') return; // no delta for all
+        const days = parseInt(range, 10);
+        const end = new Date();
+        const start = new Date(); start.setDate(end.getDate() - days);
+        const prevStart = new Date(); prevStart.setDate(start.getDate() - days);
+        const prevEnd = new Date(start);
+        const allTasks = subject.tasks || [];
+        const inRange = (t, a, b) => { const ts=new Date(t.start_time || t.timestamp || Date.now()); return ts>=a && ts<b; };
+        const cur = allTasks.filter(t => inRange(t, start, end));
+        const prev = allTasks.filter(t => inRange(t, prevStart, prevEnd));
+        const pct = (arr)=> arr.length ? Math.round(arr.filter(t=>this.isTaskCorrect(t)).length/arr.length*100) : 0;
+const cards = document.querySelectorAll(`#section-overview-${safeId} .kpi-card`);
+        if (cards.length >= 2) {
+            const totalCard = cards[0];
+            const accCard = cards[1];
+            const totalDiff = cur.length - prev.length;
+            const accDiff = pct(cur) - pct(prev);
+            const fmt = (v)=> v===0? '—' : (v>0? `▲ +${v}`: `▼ ${v}`);
+            const setDiffClass = (el, val) => { el.classList.remove('up','down'); if (val>0) el.classList.add('up'); else if (val<0) el.classList.add('down'); };
+            const td = totalCard.querySelector('.kpi-diff');
+            const ad = accCard.querySelector('.kpi-diff');
+            td.textContent = fmt(totalDiff);
+            ad.textContent = (accDiff===0? '—' : (accDiff>0? `▲ +${accDiff}%` : `▼ ${accDiff}%`));
+            setDiffClass(td, totalDiff);
+            setDiffClass(ad, accDiff);
+        }
+    }
 }
 
-// Global toggle function for category tasks
+// Global toggle function for category tasks (kept for backward compatibility)
 window.toggleCategoryTasks = function(categoryId) {
     // Find analytics manager instance
     if (window.analyticsManager && window.analyticsManager.toggleCategoryTasks) {

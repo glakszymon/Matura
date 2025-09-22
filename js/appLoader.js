@@ -242,6 +242,8 @@ class AppLoader {
         
         // Initialize dropdowns and forms with real data
         this.populateDropdowns();
+        // Wire up subject->category filtering in all relevant forms
+        this.setupCategoryHandlers();
         
         // Initialize other components
         await this.delay(300); // Simulate interface setup

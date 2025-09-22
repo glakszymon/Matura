@@ -691,15 +691,27 @@ class SimplifiedFormApp {
         // Clear any existing categories
         mobileCategorySelector.innerHTML = '';
         
-        // Get categories from the hidden select element
-        const categories = Array.from(hiddenSelect.options).map(option => ({
-            value: option.value,
-            text: option.textContent,
-            selected: option.selected
-        }));
+        // Prefer categories filtered by current session subject from cache
+        const sessionSubject = this.currentSession?.subject;
+        let model = [];
+        if (sessionSubject && this.cache && this.cache.categories && this.cache.categories.get(sessionSubject)) {
+            model = this.cache.categories.get(sessionSubject).map(cat => ({
+                value: (cat.category_name || cat.name || ''),
+                text:  (cat.category_name || cat.name || ''),
+                // Selected if it exists as selected in hidden select
+                selected: !!Array.from(hiddenSelect.selectedOptions).find(opt => opt.value === (cat.category_name || cat.name || ''))
+            }));
+        } else {
+            // Fallback to whatever is present in the hidden select
+            model = Array.from(hiddenSelect.options).map(option => ({
+                value: option.value,
+                text: option.textContent,
+                selected: option.selected
+            }));
+        }
         
-        // Create mobile category items
-        categories.forEach(category => {
+        // Create mobile category items (only for the current subject)
+        model.forEach(category => {
             const categoryItem = document.createElement('div');
             categoryItem.className = 'category-item';
             categoryItem.dataset.value = category.value;

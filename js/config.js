@@ -42,12 +42,12 @@ const CONFIG = {
     },
     // Optional: multiple exams (up to 5) for multi-countdown
     EXAMS: [
-        // Example placeholders (edit as needed)
-        // { name: 'Matura Polski', date: '2026-05-06' },
-        // { name: 'Matura Matematyka', date: '2026-05-08' },
-        // { name: 'Matura Angielski', date: '2026-05-10' },
-        // { name: 'Matura Historia', date: '2026-05-12' },
-        // { name: 'Matura Biologia', date: '2026-05-14' }
+        { name: 'Język polski – pp',     date: '2026-05-04T09:00:00' },
+        { name: 'Matematyka – pp',       date: '2026-05-05T09:00:00' },
+        { name: 'Język angielski – pp',  date: '2026-05-06T09:00:00' },
+        { name: 'Język angielski – pr',  date: '2026-05-07T09:00:00' },
+        { name: 'Matematyka – pr',       date: '2026-05-11T09:00:00' },
+        { name: 'Informatyka – pr',      date: '2026-05-14T09:00:00' }
     ],
     
     // Google Apps Script Web App URL

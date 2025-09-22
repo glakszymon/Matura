@@ -60,7 +60,7 @@
     if (!exams.length && cfg.EXAM && cfg.EXAM.DATE) {
       exams = [{ name: cfg.EXAM.NAME || 'Egzamin', date: cfg.EXAM.DATE }];
     }
-    exams = exams.slice(0, 5);
+    // Render all configured exams (no artificial limit)
     if (!exams.length) {
       host.innerHTML = '<div class="no-data-message">Brak skonfigurowanych egzaminów</div>';
       return;

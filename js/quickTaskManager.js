@@ -232,9 +232,22 @@ class QuickTaskManager {
         defaultOption.textContent = 'Wybierz kategorię...';
         this.elements.categorySelect.appendChild(defaultOption);
         
-        // Filter categories for selected subject (if needed)
-        // For now, show all categories
-        this.categories.forEach(category => {
+        // Filter categories strictly connected to the selected subject
+        const filtered = (this.categories || []).filter(cat => {
+            const subj = cat.subject || cat.subject_name;
+            return subj === subjectName;
+        });
+        
+        if (filtered.length === 0) {
+            const none = document.createElement('option');
+            none.value = '';
+            none.textContent = 'Brak kategorii dla tego przedmiotu';
+            none.disabled = true;
+            this.elements.categorySelect.appendChild(none);
+            return;
+        }
+        
+        filtered.forEach(category => {
             const option = document.createElement('option');
             option.value = category.name;
             option.textContent = category.name;

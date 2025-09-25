@@ -459,8 +459,8 @@ body {
     line-height: 1.6;
     color: var(--text-primary);
     background: var(--gray-50);
-    height: 100vh;
-    min-height: 100vh;
+    height: auto;
+    min-height: 100dvh;
     overflow-x: hidden;
     overflow-y: auto; /* Ensure vertical scrolling works */
 }
@@ -474,7 +474,8 @@ body {
     width: 100%;
     margin: 0;
     padding: 0;
-    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -483,11 +484,18 @@ body {
 .header {
     background: var(--white);
     color: var(--text-primary);
-    padding: calc(var(--spacing-lg) * 2) 0;
+    padding: 10px 0;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-md);
     border-bottom: 1px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+    will-change: transform;
 }
+.header.hidden { transform: translateY(-100%); }
+.header.compact { padding: 6px 0; box-shadow: 0 3px 10px rgba(0,0,0,0.08); }
 
 .header-content {
     text-align: center;
@@ -575,8 +583,10 @@ body {
 .main-content {
     width: 100%;
     margin: 0;
-    padding: var(--spacing-xl) var(--spacing-lg);
-    min-height: calc(100vh - 200px);
+    padding: clamp(8px, 2vw, var(--spacing-xl)) clamp(8px, 2vw, var(--spacing-lg));
+    flex: 1 1 auto;
+    min-height: 0; /* allow child to size within viewport */
+    height: auto;
     overflow-y: auto;
     display: flex;
     flex-direction: column;

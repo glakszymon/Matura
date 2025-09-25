@@ -879,9 +879,8 @@ class SimplifiedFormApp {
     exitStudySessionWithoutSaving() {
         if (confirm('🚪 Czy na pewno chcesz wyjść bez zapisywania sesji nauki? Wszystkie postępy zostaną utracone.')) {
             console.log('🚪 Exiting session without saving - user confirmed');
-            // Session cleanup disabled - keeping session data persistent
-            // this.cleanupSessionState();
-            console.log('🔒 Session data preserved (cleanup disabled)');
+            // Ensure session is fully cleaned so a new session can be started
+            this.cleanupSessionState();
             this.closeStudySessionModal();
         }
     }
@@ -1624,13 +1623,16 @@ class SimplifiedFormApp {
         // Form is always visible during session
         taskEditSection.style.display = 'block';
         
+        // Reset first to ensure a clean slate
+        taskEditForm.reset();
+        
         // Load and populate categories for the session subject
         await this.populateTaskCategories();
         
-        // Clear form to start fresh
-        taskEditForm.reset();
+        // Apply saved defaults (if any) after categories are populated
+        this.applyTaskDefaultsToForm();
         
-        console.log('📋 Task form initialized for session');
+        console.log('📋 Task form initialized for session (with defaults if available)');
     }
     
     /**
@@ -1760,7 +1762,14 @@ class SimplifiedFormApp {
         // Update UI counters
         this.updateTaskCounters();
         
-        // Clear form for next task
+        // Persist current form values as defaults for the next task (per subject)
+        this.saveTaskDefaults({
+            task_name: taskName,
+            description: description,
+            categories: selectedCategories
+        });
+        
+        // Clear form for next task and apply defaults
         this.clearTaskForm();
         
         console.log('✅ Task saved successfully:', task.task_name);
@@ -1776,6 +1785,9 @@ class SimplifiedFormApp {
         if (taskEditForm) {
             taskEditForm.reset();
             
+            // Apply saved defaults (if any) for the next task
+            this.applyTaskDefaultsToForm();
+            
             // Focus on first field for next task
             const firstInput = taskEditForm.querySelector('input[name="task_name"]');
             if (firstInput) {
@@ -1785,7 +1797,7 @@ class SimplifiedFormApp {
         }
         
         this.pendingTaskCorrectness = null;
-        console.log('🔄 Task form cleared for next task');
+        console.log('🔄 Task form cleared for next task (defaults applied if available)');
     }
     
     /**
@@ -1794,6 +1806,185 @@ class SimplifiedFormApp {
     manualClearForm() {
         this.clearTaskForm();
         console.log('🔄 Task form manually cleared');
+    }
+    
+    /**
+     * Save current form values as defaults in localStorage (scoped per subject)
+     */
+    saveTaskDefaults(defaults) {
+        try {
+            if (!this.currentSession) return;
+            
+            // Analyze task_name and auto-increment for the next default (supports pure numbers and trailing number patterns)
+            const rawName = (defaults.task_name || '').trim();
+            const { nextName, autoIncrementInfo } = this.incrementTaskName(rawName);
+            
+            const payload = {
+                task_name: nextName,
+                description: defaults.description || '',
+                categories: Array.isArray(defaults.categories) ? defaults.categories : [],
+                autoIncrementInfo
+            };
+            
+            // Store only for the current study session
+            this.currentSession.taskDefaults = payload;
+            console.log('💾 Saved task defaults for current session:', payload);
+        } catch (e) {
+            console.warn('Unable to save task defaults:', e);
+        }
+    }
+    
+    /**
+     * Load saved defaults for the current subject from localStorage
+     */
+    loadTaskDefaults() {
+        try {
+            // Read only from current session memory
+            if (!this.currentSession || !this.currentSession.taskDefaults) return null;
+            return this.currentSession.taskDefaults;
+        } catch (e) {
+            console.warn('Unable to load task defaults:', e);
+            return null;
+        }
+    }
+    
+    /**
+     * Apply saved defaults (if any) to the task form and mobile selector
+     */
+    applyTaskDefaultsToForm() {
+        const defaults = this.loadTaskDefaults();
+        if (!defaults) return;
+        
+        const form = document.getElementById('task-edit-form');
+        if (!form) return;
+        
+        // Apply text fields
+        const nameInput = form.querySelector('input[name="task_name"]');
+        const descTextarea = form.querySelector('textarea[name="description"]');
+        if (nameInput && defaults.task_name) nameInput.value = defaults.task_name;
+        if (descTextarea && typeof defaults.description === 'string') descTextarea.value = defaults.description;
+        
+        // Show or clear auto-increment hint
+        if (defaults.autoIncrementInfo && nameInput) {
+            this.showTaskNameAutoHint(defaults.autoIncrementInfo);
+        } else {
+            this.clearTaskNameAutoHint();
+        }
+        
+        // Hide the hint as soon as user edits the Task Name manually
+        if (nameInput && !nameInput.dataset.hintListener) {
+            nameInput.addEventListener('input', () => this.clearTaskNameAutoHint());
+            nameInput.dataset.hintListener = 'true';
+        }
+        
+        // Apply categories to both the hidden and visible selects if present
+        const hiddenSelect = document.getElementById('category-select-hidden');
+        const visibleSelect = form.querySelector('select[name="category"]');
+        const categories = Array.isArray(defaults.categories) ? defaults.categories : [];
+        
+        const applySelection = (selectEl) => {
+            if (!selectEl) return;
+            Array.from(selectEl.options).forEach(opt => {
+                opt.selected = categories.includes(opt.value);
+            });
+        };
+        
+        applySelection(hiddenSelect);
+        applySelection(visibleSelect);
+        
+        // Update mobile selector/count to reflect selection
+        const countDisplay = document.getElementById('category-count');
+        if (this.isMobileMode) {
+            // Rebuild UI from hidden select and preserve selections
+            this.setupMobileCategorySelector();
+        }
+        if (hiddenSelect && countDisplay) {
+            this.updateCategoryCount(hiddenSelect, countDisplay);
+        }
+        
+        console.log('✅ Applied saved task defaults to form');
+    }
+    
+    /**
+     * Determine the next default task name based on current value.
+     * - If the whole value is numeric, increment it (preserve leading zeros)
+     * - Else, if there's a trailing number, increment that and keep the prefix
+     * - Else, return unchanged
+     */
+    incrementTaskName(rawName) {
+        try {
+            if (!rawName) return { nextName: rawName, autoIncrementInfo: null };
+            const trimmed = rawName.trim();
+            // Case 1: pure number
+            if (/^\d+$/.test(trimmed)) {
+                const to = this.incrementNumberString(trimmed);
+                return { nextName: to, autoIncrementInfo: { from: trimmed, to } };
+            }
+            // Case 2: trailing number in a larger string, e.g. "Task 16" or "Zadanie_007"
+            const match = trimmed.match(/^(.*?)(\d+)(\s*)$/);
+            if (match) {
+                const prefix = match[1];
+                const digits = match[2];
+                const toDigits = this.incrementNumberString(digits);
+                const to = `${prefix}${toDigits}`;
+                return { nextName: to, autoIncrementInfo: { from: trimmed, to } };
+            }
+            // Default: unchanged
+            return { nextName: rawName, autoIncrementInfo: null };
+        } catch (e) {
+            return { nextName: rawName, autoIncrementInfo: null };
+        }
+    }
+
+    /**
+     * Increment a numeric string preserving leading zeros when possible
+     */
+    incrementNumberString(numStr) {
+        try {
+            const originalLength = numStr.length;
+            const n = parseInt(numStr, 10);
+            const incremented = (n + 1).toString();
+            // Preserve zero padding if length allows
+            if (incremented.length < originalLength) {
+                return incremented.padStart(originalLength, '0');
+            }
+            return incremented;
+        } catch (e) {
+            return numStr; // Fallback to original if anything goes wrong
+        }
+    }
+    
+    /**
+     * Show a small info hint for auto-increment applied to task name
+     */
+    showTaskNameAutoHint(info) {
+        const input = document.querySelector('#task-edit-form input[name="task_name"]');
+        const formGroup = input ? input.closest('.form-group') : null;
+        if (!formGroup) return;
+        
+        let hint = document.getElementById('task-name-hint');
+        if (!hint) {
+            hint = document.createElement('div');
+            hint.id = 'task-name-hint';
+            hint.className = 'field-help';
+            formGroup.appendChild(hint);
+        }
+        
+        const from = info.from;
+        const to = info.to;
+        hint.innerHTML = `✨ Auto +1: ustawiono <strong>${to}</strong> (z ${from})`;
+        hint.style.display = 'block';
+    }
+    
+    /**
+     * Clear the auto-increment hint if present
+     */
+    clearTaskNameAutoHint() {
+        const hint = document.getElementById('task-name-hint');
+        if (hint) {
+            hint.style.display = 'none';
+            hint.textContent = '';
+        }
     }
     
     /**

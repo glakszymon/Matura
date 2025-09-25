@@ -1,3 +1,26 @@
+(function enhanceHeaderAutoHide(){
+  const header = document.querySelector('.header');
+  if (!header) return;
+  let lastY = window.scrollY;
+  let ticking = false;
+  let compactApplied = false;
+  function onScroll(){
+    const y = window.scrollY;
+    const dy = y - lastY;
+    lastY = y;
+    if (!compactApplied && y > 8){ header.classList.add('compact'); compactApplied = true; }
+    if (y <= 8){ header.classList.remove('compact'); compactApplied = false; }
+    if (y > 40 && dy > 4){ header.classList.add('hidden'); }
+    else if (dy < -4){ header.classList.remove('hidden'); }
+  }
+  window.addEventListener('scroll', ()=>{
+    if (!ticking){
+      window.requestAnimationFrame(()=>{ onScroll(); ticking = false; });
+      ticking = true;
+    }
+  }, { passive: true });
+})();
+
 /**
  * DashboardEnhancements
  * - Subject progress chart (lines per subject, last 30 days)
